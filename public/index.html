@@ -687,6 +687,13 @@ async function deleteUser(id, name) {
 
     buildSidebar();
     showPage('dashboard');
+    else if (pageId === 'users') {
+  if (currentUser.role === 'مدير') {
+    renderUsers();
+  } else {
+    contentDiv.innerHTML = '<div class="bg-red-50 border border-red-100 p-6 rounded-2xl text-red-600 font-semibold">⛔ ليس لديك صلاحية للوصول لهذه الصفحة</div>';
+  }
+}
   </script>
 </body>
 </html>
