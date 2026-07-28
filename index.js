@@ -33,7 +33,104 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ success: false, message: 'خطأ في الخادم' });
   }
 });
+// ======== إدارة المستخدمين (للأدمن فقط) ========
 
+// جلب كل المستخدمين
+app.get('/api/users', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('users').select('id, name, email, role, phone, allowed_menus, status, created_at').order('id', { ascending: false });
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    res.json({ success: true, count: data?.length || 0, data: data || [] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// إضافة مستخدم جديد
+app.post('/api/users', async (req, res) => {
+  try {
+    const { name, email, password, role, phone, allowed_menus } = req.body;
+    
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: 'الاسم والبريد وكلمة المرور مطلوبة' });
+    }
+
+    // تشفير كلمة المرور
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const userData = {
+      name,
+      email,
+      password: hashedPassword,
+      role: role || 'مخصص',
+      phone: phone || null,
+      allowed_menus: JSON.stringify(allowed_menus || [])
+    };
+
+    const { data, error } = await supabase.from('users').insert([userData]).select();
+    if (error) {
+      if (error.code === '23505') {
+        return res.status(400).json({ success: false, message: 'البريد الإلكتروني مستخدم بالفعل' });
+      }
+      return res.status(500).json({ success: false, message: error.message });
+    }
+    
+    res.json({ success: true, data: data[0], message: '✅ تمت إضافة المستخدم بنجاح' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// تعديل مستخدم
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const { name, email, password, role, phone, allowed_menus, status } = req.body;
+    const updateData = { name, email, role, phone, status };
+    
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+    
+    if (allowed_menus) {
+      updateData.allowed_menus = JSON.stringify(allowed_menus);
+    }
+
+    const { data, error } = await supabase.from('users').update(updateData).eq('id', req.params.id).select();
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    
+    res.json({ success: true, message: '✅ تم تعديل المستخدم بنجاح' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// حذف مستخدم
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const { error } = await supabase.from('users').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    res.json({ success: true, message: '🗑️ تم حذف المستخدم بنجاح' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// جلب صلاحيات المستخدم الحالي
+app.get('/api/me', async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'];
+    if (!userId) return res.status(401).json({ success: false, message: 'غير مصرح' });
+    
+    const { data, error } = await supabase.from('users').select('id, name, email, role, allowed_menus').eq('id', userId).limit(1);
+    if (error || !data || data.length === 0) {
+      return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
+    }
+    
+    res.json({ success: true, data: data[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 // كل الجداول
 const tables = ['students', 'teachers', 'employees', 'parents', 'subjects', 'exams', 'grades', 'schedules', 'attendance', 'fees', 'revenue', 'expenses', 'transport', 'clinic', 'library', 'inventory', 'calendar_events', 'audit_log', 'school_info'];
 
