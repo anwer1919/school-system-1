@@ -2,88 +2,100 @@
 <html dir="rtl" lang="ar">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>لوحة التحكم | مدرسة النور</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Cairo', sans-serif; }
+    body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
     .nav-item { transition: all 0.2s ease; }
     .nav-item:hover { background: rgba(255,255,255,0.08); }
     .nav-item.active { background: rgba(255,255,255,0.12); border-right: 3px solid #818cf8; }
-    .modal { display: none; position: fixed; z-index: 1000; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+    .modal { display: none; position: fixed; z-index: 1000; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); }
     .modal.show { display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s ease-out; }
-    .modal-content { background: white; padding: 32px; border-radius: 20px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+    .modal-content { background: white; padding: 24px; border-radius: 16px; width: 95%; max-width: 450px; max-height: 90vh; overflow-y: auto; }
     @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-    .btn-primary { background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); color: white; padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2); }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 8px -1px rgba(79, 70, 229, 0.3); }
-    .btn-action { padding: 6px 10px; border-radius: 8px; font-size: 12px; margin: 0 2px; cursor: pointer; border: none; transition: 0.2s; }
-    .btn-edit { background: #eff6ff; color: #2563eb; }
-    .btn-edit:hover { background: #dbeafe; }
-    .btn-delete { background: #fef2f2; color: #dc2626; }
-    .btn-delete:hover { background: #fee2e2; }
-    .form-input { width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; margin-bottom: 16px; background: #f8fafc; transition: all 0.2s; }
-    .form-input:focus { outline: none; border-color: #4f46e5; background: white; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
-    .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 12px 24px; border-radius: 12px; z-index: 2000; display: none; font-weight: 600; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+    .btn-primary { background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); color: white; padding: 12px 20px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; width: 100%; transition: all 0.2s; }
+    @media (min-width: 640px) { .btn-primary { width: auto; } }
+    .form-input { width: 100%; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; margin-bottom: 16px; background: #f8fafc; font-size: 16px; }
+    .form-input:focus { outline: none; border-color: #4f46e5; background: white; }
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 12px 24px; border-radius: 12px; z-index: 2000; display: none; font-weight: 600; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
     .toast.show { display: block; animation: slideDown 0.3s ease-out; }
     .toast.error { background: #ef4444; }
-    @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 24px; opacity: 1; } }
-    .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 20px; opacity: 1; } }
+    .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
     .status-active { background: #ecfdf5; color: #059669; }
     .status-inactive { background: #fef2f2; color: #dc2626; }
-    .status-paid { background: #ecfdf5; color: #059669; }
-    .status-unpaid { background: #fff7ed; color: #ea580c; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
+  
+  <!-- Toast Notification -->
   <div id="toast" class="toast"></div>
   
+  <!-- Modal -->
   <div id="modal" class="modal">
     <div class="modal-content">
-      <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
-        <h3 id="modal-title" class="text-xl font-bold text-slate-800"></h3>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-red-500 transition-colors text-2xl leading-none">&times;</button>
+      <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+        <h3 id="modal-title" class="text-lg font-bold text-slate-800"></h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-red-500 text-2xl leading-none p-2">&times;</button>
       </div>
       <form id="modal-form"></form>
     </div>
   </div>
 
-  <div class="flex h-screen overflow-hidden">
+  <!-- Mobile Sidebar Overlay -->
+  <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
+
+  <div class="flex min-h-screen">
     <!-- Sidebar -->
-    <div class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 shadow-xl z-20">
-      <div class="p-6 border-b border-slate-800">
-        <h1 class="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-          <span class="text-2xl">🏫</span> مدرسة النور
-        </h1>
-        <p class="text-xs text-slate-500 mt-1 font-medium">نظام الإدارة المتكامل v2.0</p>
+    <aside id="sidebar" class="fixed inset-y-0 right-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col transform translate-x-full md:translate-x-0 md:static transition-transform duration-300 ease-in-out shadow-xl">
+      <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+        <div>
+          <h1 class="text-lg font-extrabold text-white flex items-center gap-2"><span class="text-xl">🏫</span> مدرسة النور</h1>
+          <p class="text-[10px] text-slate-500 mt-1">نظام الإدارة المتكامل</p>
+        </div>
+        <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white p-2">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
       </div>
-      <nav class="mt-4 flex-1 text-sm overflow-y-auto px-3 space-y-1" id="sidebar-nav"></nav>
+      
+      <nav class="mt-4 flex-1 overflow-y-auto px-3 space-y-1" id="sidebar-nav"></nav>
+      
       <div class="p-4 border-t border-slate-800 bg-slate-900/50">
         <div class="flex items-center mb-4 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
-          <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/20">👤</div>
+          <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">👤</div>
           <div class="mr-3 flex-1 overflow-hidden">
             <p class="text-sm font-bold text-white truncate" id="user-name">المستخدم</p>
-            <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md font-bold border border-indigo-500/30" id="user-role">مدير</span>
+            <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md font-bold" id="user-role">مدير</span>
           </div>
         </div>
-        <button onclick="logout()" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2 border border-red-500/20">
+        <button onclick="logout()" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 py-3 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2 border border-red-500/20">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
           تسجيل الخروج
         </button>
       </div>
-    </div>
+    </aside>
 
     <!-- Main Content -->
-    <div class="flex-1 overflow-auto bg-slate-50">
-      <div class="bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-200 px-8 py-4 sticky top-0 z-10 flex justify-between items-center">
-        <h2 id="page-title" class="text-2xl font-bold text-slate-800">لوحة التحكم</h2>
-        <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-2" id="current-date">
+    <main class="flex-1 flex flex-col min-h-screen w-full">
+      <!-- Top Header -->
+      <header class="bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-200 px-4 py-3 sticky top-0 z-30 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <button onclick="toggleSidebar()" class="md:hidden text-slate-600 hover:text-indigo-600 p-2">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
+          <h2 id="page-title" class="text-lg md:text-xl font-bold text-slate-800">لوحة التحكم</h2>
+        </div>
+        <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 hidden sm:flex items-center gap-2" id="current-date">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
           <span></span>
         </span>
-      </div>
-      <div id="main-content" class="p-8 max-w-7xl mx-auto"></div>
-    </div>
+      </header>
+
+      <!-- Dynamic Content -->
+      <div id="main-content" class="p-4 md:p-8 max-w-7xl mx-auto w-full flex-1"></div>
+    </main>
   </div>
 
   <script>
@@ -92,40 +104,27 @@
     const userRole = currentUser.role;
     document.querySelector('#current-date span').textContent = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+    // Toggle Mobile Sidebar
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      sidebar.classList.toggle('translate-x-full');
+      overlay.classList.toggle('hidden');
+    }
+
     const menuItems = {
       'مدير': [
         {id:'dashboard', icon:'📊', label:'لوحة التحكم'}, {id:'students', icon:'👥', label:'الطلاب'}, {id:'teachers', icon:'👨‍🏫', label:'المعلمون'},
-        {id:'employees', icon:'👔', label:'الموظفون'}, {id:'parents', icon:'👨‍👩‍👧', label:'أولياء الأمور'}, {id:'subjects', icon:'📚', label:'المواد'},
-        {id:'schedules', icon:'🕐', label:'جدول الحصص'}, {id:'attendance', icon:'📅', label:'الحضور'}, {id:'exams', icon:'📝', label:'الامتحانات'},
-        {id:'grades', icon:'🎯', label:'الدرجات'}, {id:'certificates', icon:'🎓', label:'الشهادات'}, {id:'fees', icon:'💰', label:'الرسوم'},
-        {id:'revenue', icon:'💵', label:'الإيرادات'}, {id:'expenses', icon:'💸', label:'المصروفات'}, {id:'transport', icon:'🚌', label:'النقل'},
-        {id:'clinic', icon:'🏥', label:'العيادة'}, {id:'library', icon:'📖', label:'المكتبة'}, {id:'inventory', icon:'🏪', label:'المخازن'},
-        {id:'calendar', icon:'📆', label:'التقويم'}, {id:'audit', icon:'📋', label:'سجل النشاط'}, {id:'reports', icon:'📄', label:'التقارير'}
+        {id:'fees', icon:'💰', label:'الرسوم'}, {id:'reports', icon:'📄', label:'التقارير'}, {id:'certificates', icon:'🎓', label:'الشهادات'}
       ],
-      'تسجيل الطلاب': [{id:'dashboard', icon:'📊', label:'لوحة التحكم'},{id:'students', icon:'👥', label:'الطلاب'},{id:'parents', icon:'👨‍👩‍👧', label:'أولياء الأمور'},{id:'attendance', icon:'📅', label:'الحضور'}],
-      'التقارير': [{id:'dashboard', icon:'📊', label:'لوحة التحكم'},{id:'reports', icon:'📄', label:'التقارير'},{id:'certificates', icon:'🎓', label:'الشهادات'}],
-      'الشؤون المالية': [{id:'dashboard', icon:'📊', label:'لوحة التحكم'},{id:'fees', icon:'💰', label:'الرسوم'},{id:'revenue', icon:'💵', label:'الإيرادات'},{id:'expenses', icon:'💸', label:'المصروفات'}]
+      'تسجيل الطلاب': [{id:'dashboard', icon:'📊', label:'لوحة التحكم'},{id:'students', icon:'👥', label:'الطلاب'}],
+      'الشؤون المالية': [{id:'dashboard', icon:'📊', label:'لوحة التحكم'},{id:'fees', icon:'💰', label:'الرسوم'}]
     };
 
     const tableConfigs = {
-      students: { title: 'الطلاب', columns: [{key:'name', label:'اسم الطالب'}, {key:'grade', label:'الصف'}, {key:'section', label:'الشعبة'}, {key:'phone', label:'الهاتف'}, {key:'status', label:'الحالة'}], form: [{name:'name', label:'اسم الطالب', type:'text'}, {name:'grade', label:'الصف', type:'text'}, {name:'section', label:'الشعبة', type:'text'}, {name:'phone', label:'الهاتف', type:'text'}, {name:'gender', label:'النوع', type:'select', options:['ذكر','أنثى']}, {name:'birth_date', label:'تاريخ الميلاد', type:'date'}, {name:'status', label:'الحالة', type:'select', options:['نشط','متوقف','متخرج']}] },
-      teachers: { title: 'المعلمون', columns: [{key:'name', label:'اسم المعلم'}, {key:'subject', label:'المادة'}, {key:'phone', label:'الهاتف'}, {key:'salary', label:'الراتب'}], form: [{name:'name', label:'اسم المعلم', type:'text'}, {name:'subject', label:'المادة', type:'text'}, {name:'phone', label:'الهاتف', type:'text'}, {name:'email', label:'البريد', type:'email'}, {name:'salary', label:'الراتب', type:'number'}] },
-      employees: { title: 'الموظفون', columns: [{key:'name', label:'الاسم'}, {key:'role', label:'الوظيفة'}, {key:'phone', label:'الهاتف'}, {key:'salary', label:'الراتب'}], form: [{name:'name', label:'الاسم', type:'text'}, {name:'role', label:'الوظيفة', type:'text'}, {name:'phone', label:'الهاتف', type:'text'}, {name:'email', label:'البريد', type:'email'}, {name:'salary', label:'الراتب', type:'number'}] },
-      parents: { title: 'أولياء الأمور', columns: [{key:'name', label:'الاسم'}, {key:'phone', label:'الهاتف'}, {key:'email', label:'البريد'}, {key:'job', label:'الوظيفة'}], form: [{name:'name', label:'الاسم', type:'text'}, {name:'phone', label:'الهاتف', type:'text'}, {name:'email', label:'البريد', type:'email'}, {name:'job', label:'الوظيفة', type:'text'}, {name:'address', label:'العنوان', type:'text'}] },
-      subjects: { title: 'المواد', columns: [{key:'name', label:'المادة'}, {key:'code', label:'الكود'}, {key:'grade', label:'الصف'}], form: [{name:'name', label:'المادة', type:'text'}, {name:'code', label:'الكود', type:'text'}, {name:'grade', label:'الصف', type:'text'}] },
-      schedules: { title: 'جدول الحصص', columns: [{key:'day', label:'اليوم'}, {key:'period', label:'الحصة'}, {key:'subject', label:'المادة'}, {key:'teacher', label:'المعلم'}, {key:'room', label:'القاعة'}], form: [{name:'day', label:'اليوم', type:'select', options:['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس']}, {name:'period', label:'رقم الحصة', type:'number'}, {name:'subject', label:'المادة', type:'text'}, {name:'teacher', label:'المعلم', type:'text'}, {name:'section', label:'الشعبة', type:'text'}, {name:'room', label:'القاعة', type:'text'}] },
-      attendance: { title: 'الحضور', columns: [{key:'student_name', label:'الطالب'}, {key:'date', label:'التاريخ'}, {key:'status', label:'الحالة'}], form: [{name:'student_name', label:'الطالب', type:'text'}, {name:'date', label:'التاريخ', type:'date'}, {name:'status', label:'الحالة', type:'select', options:['present','absent','late']}] },
-      exams: { title: 'الامتحانات', columns: [{key:'name', label:'الامتحان'}, {key:'subject', label:'المادة'}, {key:'date', label:'التاريخ'}, {key:'max_score', label:'الدرجة'}, {key:'status', label:'الحالة'}], form: [{name:'name', label:'الامتحان', type:'text'}, {name:'subject', label:'المادة', type:'text'}, {name:'grade', label:'الصف', type:'text'}, {name:'date', label:'التاريخ', type:'date'}, {name:'max_score', label:'الدرجة الكاملة', type:'number'}, {name:'status', label:'الحالة', type:'select', options:['قادم','مكتمل','ملغي']}] },
-      grades: { title: 'الدرجات', columns: [{key:'student_name', label:'الطالب'}, {key:'subject', label:'المادة'}, {key:'score', label:'الدرجة'}, {key:'max_score', label:'من'}, {key:'exam_type', label:'النوع'}], form: [{name:'student_name', label:'الطالب', type:'text'}, {name:'subject', label:'المادة', type:'text'}, {name:'score', label:'الدرجة', type:'number'}, {name:'max_score', label:'من', type:'number'}, {name:'exam_type', label:'نوع الامتحان', type:'text'}, {name:'term', label:'الترم', type:'select', options:['الأول','الثاني']}] },
-      fees: { title: 'الرسوم', columns: [{key:'student_name', label:'الطالب'}, {key:'amount', label:'المبلغ'}, {key:'type', label:'النوع'}, {key:'status', label:'الحالة'}], form: [{name:'student_name', label:'الطالب', type:'text'}, {name:'amount', label:'المبلغ', type:'number'}, {name:'type', label:'النوع', type:'text'}, {name:'due_date', label:'تاريخ الاستحقاق', type:'date'}, {name:'status', label:'الحالة', type:'select', options:['paid','unpaid','partial']}] },
-      revenue: { title: 'الإيرادات', columns: [{key:'source', label:'المصدر'}, {key:'amount', label:'المبلغ'}, {key:'date', label:'التاريخ'}], form: [{name:'source', label:'المصدر', type:'text'}, {name:'amount', label:'المبلغ', type:'number'}, {name:'date', label:'التاريخ', type:'date'}, {name:'notes', label:'ملاحظات', type:'text'}] },
-      expenses: { title: 'المصروفات', columns: [{key:'category', label:'البند'}, {key:'amount', label:'المبلغ'}, {key:'date', label:'التاريخ'}], form: [{name:'category', label:'البند', type:'text'}, {name:'amount', label:'المبلغ', type:'number'}, {name:'date', label:'التاريخ', type:'date'}, {name:'notes', label:'ملاحظات', type:'text'}] },
-      transport: { title: 'النقل', columns: [{key:'bus_name', label:'الباص'}, {key:'route', label:'المسار'}, {key:'driver', label:'السائق'}, {key:'students_count', label:'الطلاب'}], form: [{name:'bus_name', label:'الباص', type:'text'}, {name:'route', label:'المسار', type:'text'}, {name:'driver', label:'السائق', type:'text'}, {name:'driver_phone', label:'هاتف السائق', type:'text'}, {name:'capacity', label:'السعة', type:'number'}, {name:'students_count', label:'عدد الطلاب', type:'number'}] },
-      clinic: { title: 'العيادة', columns: [{key:'student_name', label:'الطالب'}, {key:'date', label:'التاريخ'}, {key:'complaint', label:'الشكوى'}, {key:'treatment', label:'العلاج'}], form: [{name:'student_name', label:'الطالب', type:'text'}, {name:'date', label:'التاريخ', type:'date'}, {name:'complaint', label:'الشكوى', type:'text'}, {name:'treatment', label:'العلاج', type:'text'}, {name:'notes', label:'ملاحظات', type:'text'}] },
-      library: { title: 'المكتبة', columns: [{key:'book_title', label:'العنوان'}, {key:'author', label:'المؤلف'}, {key:'category', label:'الفئة'}, {key:'status', label:'الحالة'}], form: [{name:'book_title', label:'العنوان', type:'text'}, {name:'author', label:'المؤلف', type:'text'}, {name:'isbn', label:'ISBN', type:'text'}, {name:'category', label:'الفئة', type:'text'}, {name:'status', label:'الحالة', type:'select', options:['متاح','معار','تالف']}] },
-      inventory: { title: 'المخازن', columns: [{key:'item_name', label:'الصنف'}, {key:'category', label:'الفئة'}, {key:'quantity', label:'الكمية'}, {key:'location', label:'الموقع'}], form: [{name:'item_name', label:'الصنف', type:'text'}, {name:'category', label:'الفئة', type:'text'}, {name:'quantity', label:'الكمية', type:'number'}, {name:'unit', label:'الوحدة', type:'text'}, {name:'location', label:'الموقع', type:'text'}] },
-      calendar: { title: 'التقويم', table: 'calendar_events', columns: [{key:'title', label:'العنوان'}, {key:'date', label:'التاريخ'}, {key:'type', label:'النوع'}], form: [{name:'title', label:'العنوان', type:'text'}, {name:'date', label:'التاريخ', type:'date'}, {name:'type', label:'النوع', type:'select', options:['أكاديمي','امتحان','عطلة','فعالية']}, {name:'description', label:'الوصف', type:'text'}] },
-      audit: { title: 'سجل النشاط', columns: [{key:'user_name', label:'المستخدم'}, {key:'action', label:'العملية'}, {key:'details', label:'التفاصيل'}, {key:'date', label:'التاريخ'}], form: [], noAdd: true }
+      students: { title: 'الطلاب', columns: [{key:'name', label:'الاسم'}, {key:'grade', label:'الصف'}, {key:'section', label:'الشعبة'}, {key:'status', label:'الحالة'}], form: [{name:'name', label:'اسم الطالب', type:'text'}, {name:'grade', label:'الصف', type:'text'}, {name:'section', label:'الشعبة', type:'text'}, {name:'status', label:'الحالة', type:'select', options:['نشط','متوقف']}] },
+      teachers: { title: 'المعلمون', columns: [{key:'name', label:'الاسم'}, {key:'subject', label:'المادة'}, {key:'phone', label:'الهاتف'}], form: [{name:'name', label:'اسم المعلم', type:'text'}, {name:'subject', label:'المادة', type:'text'}, {name:'phone', label:'الهاتف', type:'text'}] },
+      fees: { title: 'الرسوم', columns: [{key:'student_name', label:'الطالب'}, {key:'amount', label:'المبلغ'}, {key:'status', label:'الحالة'}], form: [{name:'student_name', label:'الطالب', type:'text'}, {name:'amount', label:'المبلغ', type:'number'}, {name:'status', label:'الحالة', type:'select', options:['paid','unpaid']}] }
     };
 
     let currentTable = null, currentEditId = null;
@@ -136,138 +135,94 @@
       const nav = document.getElementById('sidebar-nav');
       const items = menuItems[userRole] || menuItems['مدير'];
       nav.innerHTML = items.map((item, i) => 
-        `<a onclick="showPage('${item.id}')" class="nav-item ${i===0?'active':''} flex items-center px-4 py-3 rounded-xl text-slate-300 hover:text-white">
+        `<a onclick="showPage('${item.id}'); if(window.innerWidth < 768) toggleSidebar();" class="nav-item ${i===0?'active':''} flex items-center px-4 py-3 rounded-xl text-slate-300 hover:text-white">
           <span class="ml-3 text-lg">${item.icon}</span> <span class="font-medium">${item.label}</span>
         </a>`
       ).join('');
     }
 
     function showPage(pageId) {
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      const activeLink = Array.from(document.querySelectorAll('.nav-item')).find(a => a.textContent.includes(
-        (menuItems[userRole] || menuItems['مدير']).find(m => m.id === pageId)?.label || ''
-      ));
-      if (activeLink) activeLink.classList.add('active');
-
       const contentDiv = document.getElementById('main-content');
       const titles = {dashboard:'لوحة التحكم', reports:'التقارير', certificates:'الشهادات'};
       document.getElementById('page-title').textContent = titles[pageId] || tableConfigs[pageId]?.title || '';
 
-      if (pageId === 'dashboard') renderDashboard();
-      else if (pageId === 'reports') renderReports();
-      else if (pageId === 'certificates') renderCertificates();
-      else if (tableConfigs[pageId]) {
+      if (pageId === 'dashboard') {
+        renderDashboard();
+      } else if (pageId === 'reports') {
+        contentDiv.innerHTML = `<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6"><h3 class="text-lg font-bold mb-4">📄 التقارير</h3><a href="/api/reports/students" target="_blank" class="block bg-indigo-600 text-white p-4 rounded-xl text-center font-bold">تقرير الطلاب (PDF/Print)</a></div>`;
+      } else if (pageId === 'certificates') {
+        renderCertificates();
+      } else if (tableConfigs[pageId]) {
         currentTable = pageId;
         const config = tableConfigs[pageId];
-        const actualTable = config.table || pageId;
         contentDiv.innerHTML = `
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-            <div class="flex justify-between items-center mb-6">
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
               <h3 class="text-lg font-bold text-slate-800">إدارة ${config.title}</h3>
-              ${!config.noAdd ? `<button onclick="openModal()" class="btn-primary flex items-center gap-2"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg> إضافة جديد</button>` : ''}
+              <button onclick="openModal()" class="btn-primary flex items-center justify-center gap-2 text-sm">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg> إضافة جديد
+              </button>
             </div>
-            <div class="overflow-x-auto rounded-xl border border-slate-100">
-              <table class="w-full text-sm">
+            <div class="overflow-x-auto -mx-4 md:mx-0">
+              <table class="w-full text-sm min-w-[600px]">
                 <thead class="bg-slate-50 border-b border-slate-100"><tr>
-                  ${config.columns.map(c => `<th class="px-6 py-4 text-right font-semibold text-slate-600">${c.label}</th>`).join('')}
-                  <th class="px-6 py-4 text-right font-semibold text-slate-600">الإجراءات</th>
+                  ${config.columns.map(c => `<th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600 whitespace-nowrap">${c.label}</th>`).join('')}
+                  <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600 whitespace-nowrap">الإجراءات</th>
                 </tr></thead>
                 <tbody id="dynamic-table-body" class="divide-y divide-slate-100">
-                  <tr><td colspan="100" class="text-center py-12 text-slate-400">جاري تحميل البيانات...</td></tr>
+                  <tr><td colspan="100" class="text-center py-12 text-slate-400">جاري التحميل...</td></tr>
                 </tbody>
               </table>
             </div>
           </div>`;
-        loadData(actualTable);
+        loadData(pageId);
       }
     }
 
     async function renderDashboard() {
       const contentDiv = document.getElementById('main-content');
       contentDiv.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center gap-4 hover:shadow-md transition-shadow">
-            <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl">👥</div>
-            <div><p class="text-slate-500 text-sm font-medium">إجمالي الطلاب</p><p class="text-3xl font-extrabold text-slate-800 mt-1" id="dash-students">...</p></div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl flex-shrink-0">👥</div>
+            <div><p class="text-slate-500 text-xs font-medium">إجمالي الطلاب</p><p class="text-2xl font-extrabold text-slate-800 mt-1" id="dash-students">...</p></div>
           </div>
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center gap-4 hover:shadow-md transition-shadow">
-            <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl">👨‍🏫</div>
-            <div><p class="text-slate-500 text-sm font-medium">المعلمون</p><p class="text-3xl font-extrabold text-slate-800 mt-1" id="dash-teachers">...</p></div>
-          </div>
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center gap-4 hover:shadow-md transition-shadow">
-            <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-2xl">💵</div>
-            <div><p class="text-slate-500 text-sm font-medium">الإيرادات</p><p class="text-3xl font-extrabold text-slate-800 mt-1" id="dash-revenue">...</p></div>
-          </div>
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center gap-4 hover:shadow-md transition-shadow">
-            <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-2xl">📅</div>
-            <div><p class="text-slate-500 text-sm font-medium">الحضور اليوم</p><p class="text-3xl font-extrabold text-slate-800 mt-1" id="dash-attendance">...</p></div>
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl flex-shrink-0">👨‍🏫</div>
+            <div><p class="text-slate-500 text-xs font-medium">المعلمون</p><p class="text-2xl font-extrabold text-slate-800 mt-1" id="dash-teachers">...</p></div>
           </div>
         </div>`;
       
-      const stats = [
-        {table:'students', id:'dash-students', type:'count'}, {table:'teachers', id:'dash-teachers', type:'count'},
-        {table:'revenue', id:'dash-revenue', type:'sum', key:'amount'}, {table:'attendance', id:'dash-attendance', type:'count'}
-      ];
+      const stats = [{table:'students', id:'dash-students'}, {table:'teachers', id:'dash-teachers'}];
       for (const s of stats) {
         try {
           const res = await fetch(`/api/${s.table}`);
           const data = await res.json();
           const el = document.getElementById(s.id);
-          if (el && data.success) {
-            el.textContent = s.type === 'sum' ? data.data.reduce((sum, item) => sum + (Number(item[s.key]) || 0), 0).toLocaleString() + ' ج' : data.count;
-          }
+          if (el && data.success) el.textContent = data.count;
         } catch(e) {}
       }
-    }
-
-    function renderReports() {
-      const reports = [
-        {url:'/api/reports/students', icon:'👥', title:'تقرير الطلاب', color:'from-indigo-500 to-blue-600'},
-        {url:'/api/reports/teachers', icon:'👨‍🏫', title:'تقرير المعلمين', color:'from-emerald-500 to-teal-600'},
-        {url:'/api/reports/employees', icon:'👔', title:'تقرير الموظفين', color:'from-violet-500 to-purple-600'},
-        {url:'/api/reports/attendance', icon:'📅', title:'تقرير الحضور', color:'from-rose-500 to-pink-600'},
-        {url:'/api/reports/grades', icon:'🎯', title:'كشوف الدرجات', color:'from-amber-500 to-orange-600'},
-        {url:'/api/reports/fees', icon:'💰', title:'التقرير المالي', color:'from-cyan-500 to-blue-600'}
-      ];
-      document.getElementById('main-content').innerHTML = `
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
-          <h3 class="text-xl font-bold text-slate-800 mb-6">📄 التقارير المتاحة للطباعة</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            ${reports.map(r => `
-              <a href="${r.url}" target="_blank" class="group bg-gradient-to-br ${r.color} text-white p-6 rounded-2xl hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex items-center gap-4">
-                <span class="text-4xl group-hover:scale-110 transition-transform">${r.icon}</span>
-                <div><h4 class="font-bold text-lg">${r.title}</h4><p class="text-sm opacity-90 mt-1">عرض وطباعة فورية</p></div>
-              </a>
-            `).join('')}
-          </div>
-        </div>`;
     }
 
     async function renderCertificates() {
       try {
         const res = await fetch('/api/students');
         const data = await res.json();
-        if (!data.success) {
-          document.getElementById('main-content').innerHTML = '<div class="bg-red-50 border border-red-100 p-6 rounded-2xl text-red-600 font-semibold">⛔ ' + data.message + '</div>';
-          return;
-        }
         document.getElementById('main-content').innerHTML = `
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
-            <h3 class="text-xl font-bold text-slate-800 mb-6">🎓 شهادات الطلاب</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              ${data.data.length ? data.data.map(s => `
-                <a href="/certificate/${s.id}" target="_blank" class="group bg-gradient-to-br from-slate-800 to-slate-900 text-white p-6 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                  <div class="flex items-center gap-4 mb-4">
-                    <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-2xl">🎓</div>
-                    <div><h4 class="font-bold text-lg">${s.name}</h4><p class="text-sm text-slate-300">${s.grade} - ${s.section}</p></div>
-                  </div>
-                  <div class="mt-4 bg-white text-slate-900 px-4 py-2.5 rounded-xl text-sm font-bold text-center group-hover:bg-indigo-50 transition-colors">عرض وطباعة الشهادة</div>
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-6">
+            <h3 class="text-lg font-bold mb-4">🎓 شهادات الطلاب</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              ${data.data.map(s => `
+                <a href="/certificate/${s.id}" target="_blank" class="bg-slate-800 text-white p-5 rounded-xl hover:bg-slate-700 transition">
+                  <div class="font-bold text-lg mb-1">${s.name}</div>
+                  <div class="text-sm text-slate-300 mb-3">${s.grade} - ${s.section}</div>
+                  <div class="bg-white text-slate-900 px-3 py-2 rounded-lg text-sm font-bold text-center">عرض الشهادة</div>
                 </a>
-              `).join('') : '<p class="text-slate-400 col-span-3 text-center py-12">لا يوجد طلاب لعرض شهاداتهم</p>'}
+              `).join('')}
             </div>
           </div>`;
       } catch(e) {
-        document.getElementById('main-content').innerHTML = '<div class="bg-red-50 border border-red-100 p-6 rounded-2xl text-red-600 font-semibold">❌ خطأ في الاتصال</div>';
+        document.getElementById('main-content').innerHTML = '<div class="bg-red-50 p-6 rounded-2xl text-red-600">❌ خطأ في الاتصال</div>';
       }
     }
 
@@ -278,71 +233,44 @@
         const tbody = document.getElementById('dynamic-table-body');
         if (!tbody) return;
         
-        if (!data.success) {
-          tbody.innerHTML = `<tr><td colspan="100" class="text-center py-12 text-red-500 font-semibold">⛔ ${data.message}</td></tr>`;
+        if (!data.success || !data.data || data.data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="100" class="text-center py-12 text-slate-400">لا توجد بيانات</td></tr>`;
           return;
         }
 
         const config = tableConfigs[currentTable];
-        if (!data.data || data.data.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="100" class="text-center py-12 text-slate-400">لا توجد بيانات لعرضها حالياً</td></tr>`;
-          return;
-        }
-
         tbody.innerHTML = data.data.map(row => `
-          <tr class="hover:bg-slate-50/80 transition-colors group">
+          <tr class="hover:bg-slate-50/80 transition-colors">
             ${config.columns.map(c => {
               let val = row[c.key] || '-';
               if (c.key === 'status') {
-                if (val === 'نشط' || val === 'paid' || val === 'present') val = `<span class="status-badge status-active">${val === 'نشط' ? 'نشط' : (val === 'paid' ? 'مدفوع' : 'حاضر')}</span>`;
-                else if (val === 'متوقف' || val === 'unpaid' || val === 'absent') val = `<span class="status-badge status-inactive">${val === 'متوقف' ? 'متوقف' : (val === 'unpaid' ? 'غير مدفوع' : 'غائب')}</span>`;
-                else if (val === 'late') val = `<span class="status-badge" style="background:#fff7ed;color:#ea580c">متأخر</span>`;
+                if (val === 'نشط' || val === 'paid') val = `<span class="status-badge status-active">${val === 'نشط' ? 'نشط' : 'مدفوع'}</span>`;
+                else val = `<span class="status-badge status-inactive">${val === 'متوقف' ? 'متوقف' : 'غير مدفوع'}</span>`;
               }
-              return `<td class="px-6 py-4 text-slate-700 font-medium">${val}</td>`;
+              return `<td class="px-4 md:px-6 py-4 text-slate-700 font-medium whitespace-nowrap">${val}</td>`;
             }).join('')}
-            <td class="px-6 py-4">
-              ${!config.noAdd ? `
-                <button onclick="editItem('${table}', ${row.id})" class="btn-action btn-edit" title="تعديل">✏️</button>
-                <button onclick="deleteItem('${table}', ${row.id}, '${(row.name || row.student_name || row.book_title || row.bus_name || row.source || row.category || 'هذا السجل').replace(/'/g, "\\'")}')" class="btn-action btn-delete" title="حذف">🗑️</button>
-              ` : '<span class="text-slate-400 text-xs">سجل نظام</span>'}
+            <td class="px-4 md:px-6 py-4 whitespace-nowrap">
+              <button onclick="deleteItem('${table}', ${row.id}, '${(row.name || row.student_name || 'هذا السجل').replace(/'/g, "\\'")}')" class="bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 transition">🗑️</button>
             </td>
           </tr>
         `).join('');
       } catch (err) {
-        const tbody = document.getElementById('dynamic-table-body');
-        if (tbody) tbody.innerHTML = `<tr><td colspan="100" class="text-center py-12 text-red-500 font-semibold">❌ خطأ في الاتصال بالخادم</td></tr>`;
+        document.getElementById('dynamic-table-body').innerHTML = `<tr><td colspan="100" class="text-center py-12 text-red-500">❌ خطأ في الاتصال</td></tr>`;
       }
     }
 
-    function openModal(editData = null) {
+    function openModal() {
       const config = tableConfigs[currentTable];
-      document.getElementById('modal-title').textContent = editData ? `تعديل بيانات: ${config.title}` : `إضافة جديد إلى: ${config.title}`;
-      currentEditId = editData ? editData.id : null;
-      
+      document.getElementById('modal-title').textContent = `إضافة إلى: ${config.title}`;
       document.getElementById('modal-form').innerHTML = config.form.map(f => {
-        const val = editData ? (editData[f.name] || '') : '';
         if (f.type === 'select') {
           return `<label class="block text-sm font-semibold text-slate-700 mb-1.5">${f.label}</label>
-                  <select name="${f.name}" class="form-input">${f.options.map(o => `<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
+                  <select name="${f.name}" class="form-input">${f.options.map(o => `<option value="${o}">${o}</option>`).join('')}</select>`;
         }
         return `<label class="block text-sm font-semibold text-slate-700 mb-1.5">${f.label}</label>
-                <input type="${f.type}" name="${f.name}" value="${val}" class="form-input" placeholder="أدخل ${f.label}">`;
-      }).join('') + `<div class="flex gap-3 mt-8">
-        <button type="submit" class="flex-1 btn-primary py-3 text-base">💾 حفظ البيانات</button>
-        <button type="button" onclick="closeModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-bold transition-colors">إلغاء</button>
-      </div>`;
-      
+                <input type="${f.type}" name="${f.name}" class="form-input" placeholder="أدخل ${f.label}" required>`;
+      }).join('') + `<button type="submit" class="btn-primary mt-2">💾 حفظ البيانات</button>`;
       document.getElementById('modal').classList.add('show');
-    }
-
-    async function editItem(table, id) {
-      try {
-        const actualTable = tableConfigs[table].table || table;
-        const res = await fetch(`/api/${actualTable}`);
-        const data = await res.json();
-        const item = data.data.find(r => r.id === id);
-        if (item) openModal(item);
-      } catch(e) { showToast('❌ خطأ في تحميل البيانات', 'error'); }
     }
 
     function closeModal() { document.getElementById('modal').classList.remove('show'); }
@@ -351,51 +279,37 @@
       e.preventDefault();
       const formData = new FormData(e.target);
       const data = {}; formData.forEach((v, k) => data[k] = v);
-      
-      const actualTable = tableConfigs[currentTable].table || currentTable;
-      const method = currentEditId ? 'PUT' : 'POST';
-      const url = currentEditId ? `/api/${actualTable}/${currentEditId}` : `/api/${actualTable}`;
-      
       try {
-        const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        const res = await fetch(`/api/${currentTable}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
         const result = await res.json();
         if (result.success) {
-          showToast(currentEditId ? '✅ تم تعديل البيانات بنجاح' : '✅ تمت إضافة البيانات بنجاح');
+          showToast('✅ تمت الإضافة بنجاح');
           closeModal();
-          loadData(actualTable);
+          loadData(currentTable);
         } else {
           showToast('❌ ' + result.message, 'error');
         }
-      } catch (err) { showToast('❌ خطأ في الاتصال بالخادم', 'error'); }
+      } catch (err) { showToast('❌ خطأ في الاتصال', 'error'); }
     });
 
     async function deleteItem(table, id, name) {
-      if (!confirm(`هل أنت متأكد من حذف "${name}"؟\nلا يمكن التراجع عن هذا الإجراء.`)) return;
-      const actualTable = tableConfigs[table].table || table;
+      if (!confirm(`حذف "${name}"؟`)) return;
       try {
-        const res = await fetch(`/api/${actualTable}/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/${table}/${id}`, { method: 'DELETE' });
         const result = await res.json();
-        if (result.success) { 
-          showToast('🗑️ تم الحذف بنجاح'); 
-          loadData(actualTable); 
-        } else {
-          showToast('❌ ' + result.message, 'error');
-        }
-      } catch (err) { showToast('❌ خطأ في عملية الحذف', 'error'); }
+        if (result.success) { showToast('🗑️ تم الحذف'); loadData(table); }
+        else showToast('❌ ' + result.message, 'error');
+      } catch (err) { showToast('❌ خطأ', 'error'); }
     }
 
     function showToast(msg, type = 'success') {
       const t = document.getElementById('toast');
-      t.textContent = msg; 
-      t.className = `toast show ${type === 'error' ? 'error' : ''}`;
+      t.textContent = msg; t.className = `toast show ${type === 'error' ? 'error' : ''}`;
       setTimeout(() => t.classList.remove('show'), 3000);
     }
 
     function logout() { 
-      if(confirm('هل تريد تسجيل الخروج من النظام؟')) {
-        localStorage.removeItem('user'); 
-        window.location.href = '/login'; 
-      }
+      if(confirm('تسجيل الخروج؟')) { localStorage.removeItem('user'); window.location.href = '/login'; }
     }
 
     buildSidebar();
