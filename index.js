@@ -28,7 +28,18 @@ app.post('/api/login', async (req, res) => {
     try { isMatch = await bcrypt.compare(password, user.password); } 
     catch (e) { isMatch = (password === '123456'); }
     if (!isMatch) return res.status(401).json({ success: false, message: 'كلمة المرور غير صحيحة' });
-    res.json({ success: true, user: { id: user.id, name: user.name, role: user.role, email: user.email } });
+    
+    // إرجاع الصلاحيات مع بيانات المستخدم
+    res.json({ 
+      success: true, 
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        role: user.role, 
+        email: user.email,
+        allowed_menus: JSON.parse(user.allowed_menus || '[]')
+      } 
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: 'خطأ في الخادم' });
   }
