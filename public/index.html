@@ -114,58 +114,44 @@
       overlay.classList.toggle('hidden');
     }
 
-    // كل القوائم (21 قسم)
-    const menuItems = {
-      'مدير': [
-        {id:'dashboard', icon:'📊', label:'لوحة التحكم'},
-        {id:'students', icon:'👥', label:'الطلاب'},
-        {id:'teachers', icon:'👨‍🏫', label:'المعلمون'},
-        {id:'employees', icon:'👔', label:'الموظفون'},
-        {id:'parents', icon:'👨‍👩‍👧', label:'أولياء الأمور'},
-        {id:'subjects', icon:'📚', label:'المواد'},
-        {id:'schedules', icon:'🕐', label:'جدول الحصص'},
-        {id:'attendance', icon:'📅', label:'الحضور'},
-        {id:'exams', icon:'📝', label:'الامتحانات'},
-        {id:'grades', icon:'🎯', label:'الدرجات'},
-        {id:'certificates', icon:'🎓', label:'الشهادات'},
-        {id:'fees', icon:'💰', label:'الرسوم'},
-        {id:'revenue', icon:'💵', label:'الإيرادات'},
-        {id:'expenses', icon:'💸', label:'المصروفات'},
-        {id:'transport', icon:'🚌', label:'النقل'},
-        {id:'clinic', icon:'🏥', label:'العيادة'},
-        {id:'library', icon:'📖', label:'المكتبة'},
-        {id:'inventory', icon:'🏪', label:'المخازن'},
-        {id:'calendar', icon:'📆', label:'التقويم'},
-        {id:'audit', icon:'📋', label:'سجل النشاط'},
-        {id:'reports', icon:'📄', label:'التقارير'}
-      ],
+   
       'تسجيل الطلاب': [{id:'dashboard', icon:'📊', label:'لوحة التحكم'},{id:'students', icon:'👥', label:'الطلاب'},{id:'parents', icon:'👨‍👩‍👧', label:'أولياء الأمور'},{id:'attendance', icon:'📅', label:'الحضور'}],
       'التقارير': [{id:'dashboard', icon:'📊', label:'لوحة التحكم'},{id:'reports', icon:'📄', label:'التقارير'},{id:'certificates', icon:'🎓', label:'الشهادات'}],
-      'الشؤون المالية': [{id:'dashboard', icon:'📊', label:'لوحة التحكم'},{id:'fees', icon:'💰', label:'الرسوم'},{id:'revenue', icon:'💵', label:'الإيرادات'},{id:'expenses', icon:'💸', label:'المصروفات'}]
-    };
+      'الشؤ // كل القوائم (21 قسم)
+    // كل القوائم المتاحة في النظام
+const allMenus = [
+  {id:'dashboard', icon:'📊', label:'لوحة التحكم'},
+  {id:'students', icon:'👥', label:'الطلاب'},
+  {id:'teachers', icon:'👨‍🏫', label:'المعلمون'},
+  {id:'employees', icon:'👔', label:'الموظفون'},
+  {id:'parents', icon:'👨‍👩‍👧', label:'أولياء الأمور'},
+  {id:'subjects', icon:'📚', label:'المواد'},
+  {id:'schedules', icon:'🕐', label:'جدول الحصص'},
+  {id:'attendance', icon:'📅', label:'الحضور'},
+  {id:'exams', icon:'📝', label:'الامتحانات'},
+  {id:'grades', icon:'🎯', label:'الدرجات'},
+  {id:'certificates', icon:'🎓', label:'الشهادات'},
+  {id:'fees', icon:'💰', label:'الرسوم'},
+  {id:'revenue', icon:'💵', label:'الإيرادات'},
+  {id:'expenses', icon:'💸', label:'المصروفات'},
+  {id:'transport', icon:'🚌', label:'النقل'},
+  {id:'clinic', icon:'🏥', label:'العيادة'},
+  {id:'library', icon:'📖', label:'المكتبة'},
+  {id:'inventory', icon:'🏪', label:'المخازن'},
+  {id:'calendar', icon:'📆', label:'التقويم'},
+  {id:'audit', icon:'📋', label:'سجل النشاط'},
+  {id:'reports', icon:'📄', label:'التقارير'},
+  {id:'users', icon:'👥', label:'إدارة المستخدمين'}
+];
 
-    // كل إعدادات الجداول
-    const tableConfigs = {
-      students: { title: 'الطلاب', columns: [{key:'name', label:'الاسم'}, {key:'grade', label:'الصف'}, {key:'section', label:'الشعبة'}, {key:'phone', label:'الهاتف'}, {key:'status', label:'الحالة'}], form: [{name:'name', label:'اسم الطالب', type:'text'}, {name:'grade', label:'الصف', type:'text'}, {name:'section', label:'الشعبة', type:'text'}, {name:'phone', label:'الهاتف', type:'text'}, {name:'gender', label:'النوع', type:'select', options:['ذكر','أنثى']}, {name:'birth_date', label:'تاريخ الميلاد', type:'date'}, {name:'status', label:'الحالة', type:'select', options:['نشط','متوقف','متخرج']}] },
-      teachers: { title: 'المعلمون', columns: [{key:'name', label:'الاسم'}, {key:'subject', label:'المادة'}, {key:'phone', label:'الهاتف'}, {key:'salary', label:'الراتب'}], form: [{name:'name', label:'اسم المعلم', type:'text'}, {name:'subject', label:'المادة', type:'text'}, {name:'phone', label:'الهاتف', type:'text'}, {name:'email', label:'البريد', type:'email'}, {name:'salary', label:'الراتب', type:'number'}] },
-      employees: { title: 'الموظفون', columns: [{key:'name', label:'الاسم'}, {key:'role', label:'الوظيفة'}, {key:'phone', label:'الهاتف'}, {key:'salary', label:'الراتب'}], form: [{name:'name', label:'الاسم', type:'text'}, {name:'role', label:'الوظيفة', type:'text'}, {name:'phone', label:'الهاتف', type:'text'}, {name:'email', label:'البريد', type:'email'}, {name:'salary', label:'الراتب', type:'number'}] },
-      parents: { title: 'أولياء الأمور', columns: [{key:'name', label:'الاسم'}, {key:'phone', label:'الهاتف'}, {key:'email', label:'البريد'}, {key:'job', label:'الوظيفة'}], form: [{name:'name', label:'الاسم', type:'text'}, {name:'phone', label:'الهاتف', type:'text'}, {name:'email', label:'البريد', type:'email'}, {name:'job', label:'الوظيفة', type:'text'}, {name:'address', label:'العنوان', type:'text'}] },
-      subjects: { title: 'المواد', columns: [{key:'name', label:'المادة'}, {key:'code', label:'الكود'}, {key:'grade', label:'الصف'}], form: [{name:'name', label:'المادة', type:'text'}, {name:'code', label:'الكود', type:'text'}, {name:'grade', label:'الصف', type:'text'}] },
-      schedules: { title: 'جدول الحصص', columns: [{key:'day', label:'اليوم'}, {key:'period', label:'الحصة'}, {key:'subject', label:'المادة'}, {key:'teacher', label:'المعلم'}, {key:'room', label:'القاعة'}], form: [{name:'day', label:'اليوم', type:'select', options:['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس']}, {name:'period', label:'رقم الحصة', type:'number'}, {name:'subject', label:'المادة', type:'text'}, {name:'teacher', label:'المعلم', type:'text'}, {name:'section', label:'الشعبة', type:'text'}, {name:'room', label:'القاعة', type:'text'}] },
-      attendance: { title: 'الحضور', columns: [{key:'student_name', label:'الطالب'}, {key:'date', label:'التاريخ'}, {key:'status', label:'الحالة'}], form: [{name:'student_name', label:'الطالب', type:'text'}, {name:'date', label:'التاريخ', type:'date'}, {name:'status', label:'الحالة', type:'select', options:['present','absent','late']}] },
-      exams: { title: 'الامتحانات', columns: [{key:'name', label:'الامتحان'}, {key:'subject', label:'المادة'}, {key:'date', label:'التاريخ'}, {key:'max_score', label:'الدرجة'}, {key:'status', label:'الحالة'}], form: [{name:'name', label:'الامتحان', type:'text'}, {name:'subject', label:'المادة', type:'text'}, {name:'grade', label:'الصف', type:'text'}, {name:'date', label:'التاريخ', type:'date'}, {name:'max_score', label:'الدرجة الكاملة', type:'number'}, {name:'status', label:'الحالة', type:'select', options:['قادم','مكتمل','ملغي']}] },
-      grades: { title: 'الدرجات', columns: [{key:'student_name', label:'الطالب'}, {key:'subject', label:'المادة'}, {key:'score', label:'الدرجة'}, {key:'max_score', label:'من'}, {key:'exam_type', label:'النوع'}], form: [{name:'student_name', label:'الطالب', type:'text'}, {name:'subject', label:'المادة', type:'text'}, {name:'score', label:'الدرجة', type:'number'}, {name:'max_score', label:'من', type:'number'}, {name:'exam_type', label:'نوع الامتحان', type:'text'}, {name:'term', label:'الترم', type:'select', options:['الأول','الثاني']}] },
-      fees: { title: 'الرسوم', columns: [{key:'student_name', label:'الطالب'}, {key:'amount', label:'المبلغ'}, {key:'type', label:'النوع'}, {key:'status', label:'الحالة'}], form: [{name:'student_name', label:'الطالب', type:'text'}, {name:'amount', label:'المبلغ', type:'number'}, {name:'type', label:'النوع', type:'text'}, {name:'due_date', label:'تاريخ الاستحقاق', type:'date'}, {name:'status', label:'الحالة', type:'select', options:['paid','unpaid','partial']}] },
-      revenue: { title: 'الإيرادات', columns: [{key:'source', label:'المصدر'}, {key:'amount', label:'المبلغ'}, {key:'date', label:'التاريخ'}], form: [{name:'source', label:'المصدر', type:'text'}, {name:'amount', label:'المبلغ', type:'number'}, {name:'date', label:'التاريخ', type:'date'}, {name:'notes', label:'ملاحظات', type:'text'}] },
-      expenses: { title: 'المصروفات', columns: [{key:'category', label:'البند'}, {key:'amount', label:'المبلغ'}, {key:'date', label:'التاريخ'}], form: [{name:'category', label:'البند', type:'text'}, {name:'amount', label:'المبلغ', type:'number'}, {name:'date', label:'التاريخ', type:'date'}, {name:'notes', label:'ملاحظات', type:'text'}] },
-      transport: { title: 'النقل', columns: [{key:'bus_name', label:'الباص'}, {key:'route', label:'المسار'}, {key:'driver', label:'السائق'}, {key:'students_count', label:'الطلاب'}], form: [{name:'bus_name', label:'الباص', type:'text'}, {name:'route', label:'المسار', type:'text'}, {name:'driver', label:'السائق', type:'text'}, {name:'driver_phone', label:'هاتف السائق', type:'text'}, {name:'capacity', label:'السعة', type:'number'}, {name:'students_count', label:'عدد الطلاب', type:'number'}] },
-      clinic: { title: 'العيادة', columns: [{key:'student_name', label:'الطالب'}, {key:'date', label:'التاريخ'}, {key:'complaint', label:'الشكوى'}, {key:'treatment', label:'العلاج'}], form: [{name:'student_name', label:'الطالب', type:'text'}, {name:'date', label:'التاريخ', type:'date'}, {name:'complaint', label:'الشكوى', type:'text'}, {name:'treatment', label:'العلاج', type:'text'}, {name:'notes', label:'ملاحظات', type:'text'}] },
-      library: { title: 'المكتبة', columns: [{key:'book_title', label:'العنوان'}, {key:'author', label:'المؤلف'}, {key:'category', label:'الفئة'}, {key:'status', label:'الحالة'}], form: [{name:'book_title', label:'العنوان', type:'text'}, {name:'author', label:'المؤلف', type:'text'}, {name:'isbn', label:'ISBN', type:'text'}, {name:'category', label:'الفئة', type:'text'}, {name:'status', label:'الحالة', type:'select', options:['متاح','معار','تالف']}] },
-      inventory: { title: 'المخازن', columns: [{key:'item_name', label:'الصنف'}, {key:'category', label:'الفئة'}, {key:'quantity', label:'الكمية'}, {key:'location', label:'الموقع'}], form: [{name:'item_name', label:'الصنف', type:'text'}, {name:'category', label:'الفئة', type:'text'}, {name:'quantity', label:'الكمية', type:'number'}, {name:'unit', label:'الوحدة', type:'text'}, {name:'location', label:'الموقع', type:'text'}] },
-      calendar: { title: 'التقويم', table: 'calendar_events', columns: [{key:'title', label:'العنوان'}, {key:'date', label:'التاريخ'}, {key:'type', label:'النوع'}], form: [{name:'title', label:'العنوان', type:'text'}, {name:'date', label:'التاريخ', type:'date'}, {name:'type', label:'النوع', type:'select', options:['أكاديمي','امتحان','عطلة','فعالية']}, {name:'description', label:'الوصف', type:'text'}] },
-      audit: { title: 'سجل النشاط', columns: [{key:'user_name', label:'المستخدم'}, {key:'action', label:'العملية'}, {key:'details', label:'التفاصيل'}, {key:'date', label:'التاريخ'}], form: [], noAdd: true }
-    };
-
+// القوائم حسب الدور (للأدمن فقط يرى كل شيء)
+const menuItems = {
+  'مدير': allMenus,
+  'تسجيل الطلاب': allMenus.filter(m => ['dashboard','students','parents','attendance'].includes(m.id)),
+  'التقارير': allMenus.filter(m => ['dashboard','reports','certificates'].includes(m.id)),
+  'الشؤون المالية': allMenus.filter(m => ['dashboard','fees','revenue','expenses'].includes(m.id)),
+  'مخصص': [] // سيتم ملؤها ديناميكياً من allowed_menus
+};
     let currentTable = null, currentEditId = null;
 
     function buildSidebar() {
