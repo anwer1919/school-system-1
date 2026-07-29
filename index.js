@@ -31,15 +31,10 @@ app.post('/api/login', async (req, res) => {
     
     // التحقق من كلمة المرور (يقبل 123456 مباشرة أو كلمة المرور المشفرة)
     let isMatch = false;
-    if (password === '123456') {
-      isMatch = true; // كلمة مرور احتياطية مضمونة
-    } else {
-      try { 
-        isMatch = await bcrypt.compare(password, user.password); 
-      } catch (e) { 
-        isMatch = false; 
-      }
-    }
+   let isMatch = false;
+try { isMatch = await bcrypt.compare(password, user.password); } 
+catch (e) { isMatch = (password === '123456'); }
+if (!isMatch) return res.status(401).json({ success: false, message: 'كلمة المرور غير صحيحة' });
     
     if (!isMatch) return res.status(401).json({ success: false, message: 'كلمة المرور غير صحيحة' });
     
