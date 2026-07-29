@@ -112,7 +112,6 @@
       overlay.classList.toggle('hidden');
     }
 
-    // كل القوائم المتاحة
     const allMenus = [
       {id:'dashboard', icon:'📊', label:'لوحة التحكم'},
       {id:'students', icon:'👥', label:'الطلاب'},
@@ -142,8 +141,7 @@
       'مدير': allMenus,
       'تسجيل الطلاب': allMenus.filter(m => ['dashboard','students','parents','attendance'].includes(m.id)),
       'التقارير': allMenus.filter(m => ['dashboard','reports','certificates'].includes(m.id)),
-      'الشؤون المالية': allMenus.filter(m => ['dashboard','fees','revenue','expenses'].includes(m.id)),
-      'مخصص': []
+      'الشؤون المالية': allMenus.filter(m => ['dashboard','fees','revenue','expenses'].includes(m.id))
     };
 
     const tableConfigs = {
@@ -176,14 +174,41 @@
       const nav = document.getElementById('sidebar-nav');
       let items = [];
       
+      // إذا كان المدير، يرى كل القوائم
       if (currentUser.role === 'مدير') {
-        items = menuItems['مدير'];
-      } else if (menuItems[currentUser.role]) {
+        items = allMenus;
+      }
+      // إذا كان دور محدد مسبقاً
+      else if (menuItems[currentUser.role]) {
         items = menuItems[currentUser.role];
-      } else if (currentUser.role === 'مخصص' && currentUser.allowed_menus) {
-        items = allMenus.filter(m => currentUser.allowed_menus.includes(m.id));
+      }
+      // إذا كان مخصص، استخدم allowed_menus
+      else if (currentUser.role === 'مخصص') {
+        let allowedMenus = currentUser.allowed_menus || [];
+        
+        // إذا كان allowed_menus string، حوّله إلى array
+        if (typeof allowedMenus === 'string') {
+          try {
+            allowedMenus = JSON.parse(allowedMenus);
+          } catch (e) {
+            allowedMenus = [];
+          }
+        }
+        
+        // تأكد أنه array
+        if (!Array.isArray(allowedMenus)) {
+          allowedMenus = [];
+        }
+        
+        // فلتر القوائم المسموحة
+        if (allowedMenus.length > 0) {
+          items = allMenus.filter(m => allowedMenus.includes(m.id));
+        } else {
+          items = [{id:'dashboard', icon:'📊', label:'لوحة التحكم'}];
+        }
       }
       
+      // تأكد من وجود لوحة التحكم دائماً
       if (!items.find(m => m.id === 'dashboard')) {
         items.unshift({id:'dashboard', icon:'📊', label:'لوحة التحكم'});
       }
@@ -198,7 +223,7 @@
     function showPage(pageId) {
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       const activeLink = Array.from(document.querySelectorAll('.nav-item')).find(a => a.textContent.includes(
-        (menuItems[currentUser.role] || menuItems['مدير']).find(m => m.id === pageId)?.label || ''
+        allMenus.find(m => m.id === pageId)?.label || ''
       ));
       if (activeLink) activeLink.classList.add('active');
 
@@ -344,7 +369,6 @@
       }
     }
 
-    // ======== إدارة المستخدمين ========
     async function renderUsers() {
       const contentDiv = document.getElementById('main-content');
       contentDiv.innerHTML = `
@@ -429,7 +453,12 @@
         fetch('/api/users').then(r => r.json()).then(data => {
           if (data.success) {
             user = data.data.find(u => u.id === userId) || user;
-            user.allowed_menus = JSON.parse(user.allowed_menus || '[]');
+            let allowedMenus = user.allowed_menus || [];
+            if (typeof allowedMenus === 'string') {
+              try { allowedMenus = JSON.parse(allowedMenus); } catch (e) { allowedMenus = []; }
+            }
+            if (!Array.isArray(allowedMenus)) allowedMenus = [];
+            user.allowed_menus = allowedMenus;
             renderUserForm(user);
           }
         });
