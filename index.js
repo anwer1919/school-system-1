@@ -528,7 +528,91 @@ app.get('/api/reports/transport', async (req, res) => {
   const r = (data || []).map(function(t) { return '<tr><td>' + t.bus_name + '</td><td>' + t.route + '</td><td>' + (t.driver || '-') + '</td><td>' + (t.students_count || 0) + '/' + (t.capacity || 0) + '</td></tr>'; }).join('');
   res.send(makeReport('🚌 تقرير النقل', ['الباص', 'المسار', 'السائق', 'الطلاب/السعة'], r));
 });
-
+// ======== طباعة جدول الحصص (مع فلترة) ========
+app.get('/api/reports/schedule-print', async (req, res) => {
+  try {
+    const { section, view, day } = req.query;
+    const dt = getDateTimeInfo();
+    
+    let query = supabase.from('schedules').select('*');
+    
+    if (section && section !== 'all') {
+      query = query.eq('section', section);
+    }
+    
+    if (view === 'daily' && day) {
+      query = query.eq('day', day);
+    }
+    
+    const { data, error } = await query.order('period', { ascending: true });
+    if (error) throw error;
+    
+    const sectionName = section && section !== 'all' ? section : 'جميع الفصول';
+    let title = '';
+    let tableHtml = '';
+    
+    if (view === 'daily' && day) {
+      // عرض يومي
+      title = '📅 جدول الحصص اليومي - ' + day + ' - ' + sectionName;
+      
+      tableHtml = '<table class="w-full text-sm border-collapse">';
+      tableHtml += '<thead><tr class="bg-slate-800 text-white"><th class="px-4 py-3 border border-slate-600">الحصة</th><th class="px-4 py-3 border border-slate-600">المادة</th><th class="px-4 py-3 border border-slate-600">المعلم</th><th class="px-4 py-3 border border-slate-600">القاعة</th></tr></thead><tbody>';
+      
+      if (!data || data.length === 0) {
+        tableHtml += '<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">لا توجد حصص لهذا اليوم</td></tr>';
+      } else {
+        data.forEach(item => {
+          tableHtml += '<tr class="hover:bg-slate-50"><td class="px-4 py-3 border border-slate-200 text-center font-bold">الحصة ' + item.period + '</td><td class="px-4 py-3 border border-slate-200 font-semibold text-indigo-700">' + item.subject + '</td><td class="px-4 py-3 border border-slate-200">' + (item.teacher || '-') + '</td><td class="px-4 py-3 border border-slate-200">' + (item.room || '-') + '</td></tr>';
+        });
+      }
+      
+      tableHtml += '</tbody></table>';
+    } else {
+      // عرض أسبوعي
+      title = '📆 الجدول الأسبوعي - ' + sectionName;
+      const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
+      const periods = [1, 2, 3, 4, 5];
+      
+      const weeklyData = {};
+      days.forEach(d => {
+        weeklyData[d] = {};
+        periods.forEach(p => { weeklyData[d][p] = null; });
+      });
+      
+      (data || []).forEach(item => {
+        if (weeklyData[item.day] && weeklyData[item.day][item.period] === null) {
+          weeklyData[item.day][item.period] = item;
+        }
+      });
+      
+      tableHtml = '<table class="w-full text-sm min-w-[800px] border-collapse">';
+      tableHtml += '<thead><tr class="bg-slate-800 text-white"><th class="px-4 py-3 border border-slate-600">الحصة</th>';
+      days.forEach(d => { tableHtml += '<th class="px-4 py-3 border border-slate-600">' + d + '</th>'; });
+      tableHtml += '</tr></thead><tbody>';
+      
+      periods.forEach(period => {
+        tableHtml += '<tr class="' + (period % 2 === 0 ? 'bg-slate-50' : 'bg-white') + '"><td class="px-4 py-3 border border-slate-200 font-bold text-center">الحصة ' + period + '</td>';
+        days.forEach(d => {
+          const item = weeklyData[d][period];
+          if (item) {
+            tableHtml += '<td class="px-4 py-3 border border-slate-200 text-center"><div class="font-semibold text-indigo-700">' + item.subject + '</div><div class="text-xs text-slate-500 mt-1">' + (item.teacher || '-') + '</div><div class="text-xs text-slate-400">' + (item.room || '-') + '</div></td>';
+          } else {
+            tableHtml += '<td class="px-4 py-3 border border-slate-200 text-center text-slate-300">-</td>';
+          }
+        });
+        tableHtml += '</tr>';
+      });
+      
+      tableHtml += '</tbody></table>';
+    }
+    
+    const html = '<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>' + title + '</title><style>body{font-family:Arial,sans-serif;padding:40px;background:#f5f5f5}.header{background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;padding:30px;border-radius:10px;margin-bottom:30px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,0.1)}.header .school-name{font-size:28px;font-weight:bold;margin-bottom:15px}.header .info{display:flex;justify-content:space-around;margin-top:20px;font-size:14px}.header .info div{background:rgba(255,255,255,0.2);padding:10px 20px;border-radius:8px}table{width:100%;border-collapse:collapse;margin-top:20px;background:white}th{background:#1e40af;color:white;padding:12px}td{padding:10px;border:1px solid #ddd;text-align:center}.pbtn{display:block;margin:30px auto;padding:12px 40px;background:#1e40af;color:white;border:none;border-radius:8px;cursor:pointer;font-size:16px}@media print{.pbtn{display:none}body{background:white;padding:20px}.header{box-shadow:none}}</style></head><body><div class="header"><div class="school-name">🏫 مدرسة النور النموذجية</div><h1 style="color:white;margin:0;font-size:24px">' + title + '</h1><div class="info"><div>📅 التاريخ: ' + dt.dateStr + '</div><div>🕐 الوقت: ' + dt.timeStr + '</div></div></div>' + tableHtml + '<button class="pbtn" onclick="window.print()">🖨️ طباعة الجدول</button></body></html>';
+    
+    res.send(html);
+  } catch (err) {
+    res.status(500).send('خطأ في الخادم: ' + err.message);
+  }
+});
 app.get('/api/reports/schedules', async (req, res) => {
   const { data } = await supabase.from('schedules').select('*');
   const r = (data || []).map(function(s) { return '<tr><td>' + s.day + '</td><td>' + s.period + '</td><td>' + s.subject + '</td><td>' + (s.teacher || '-') + '</td><td>' + (s.section || '-') + '</td><td>' + (s.room || '-') + '</td></tr>'; }).join('');
