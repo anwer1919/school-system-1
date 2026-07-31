@@ -17,6 +17,8 @@
     @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     .btn-primary { background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); color: white; padding: 12px 20px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; transition: all 0.2s; }
     .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 8px -1px rgba(79, 70, 229, 0.3); }
+    .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 12px 20px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+    .btn-success:hover { transform: translateY(-1px); box-shadow: 0 6px 8px -1px rgba(16, 185, 129, 0.3); }
     .btn-action { padding: 6px 10px; border-radius: 8px; font-size: 12px; margin: 0 2px; cursor: pointer; border: none; transition: 0.2s; }
     .btn-edit { background: #eff6ff; color: #2563eb; }
     .btn-edit:hover { background: #dbeafe; }
@@ -31,9 +33,6 @@
     .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
     .status-active { background: #ecfdf5; color: #059669; }
     .status-inactive { background: #fef2f2; color: #dc2626; }
-    .status-paid { background: #ecfdf5; color: #059669; }
-    .status-unpaid { background: #fff7ed; color: #ea580c; }
-    .status-partial { background: #fef3c7; color: #d97706; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -114,12 +113,13 @@
 
     const allMenus = [
       {id:'dashboard', icon:'📊', label:'لوحة التحكم'},
+      {id:'manage-schedules', icon:'➕', label:'إدارة الحصص'},
+      {id:'schedules', icon:'🕐', label:'جدول الحصص'},
       {id:'students', icon:'👥', label:'الطلاب'},
       {id:'teachers', icon:'👨‍🏫', label:'المعلمون'},
       {id:'employees', icon:'👔', label:'الموظفون'},
       {id:'parents', icon:'👨‍👩‍👧', label:'أولياء الأمور'},
       {id:'subjects', icon:'📚', label:'المواد'},
-      {id:'schedules', icon:'🕐', label:'جدول الحصص'},
       {id:'attendance', icon:'📅', label:'الحضور'},
       {id:'exams', icon:'📝', label:'الامتحانات'},
       {id:'grades', icon:'🎯', label:'الدرجات'},
@@ -210,12 +210,13 @@
       if (activeLink) activeLink.classList.add('active');
 
       const contentDiv = document.getElementById('main-content');
-      const titles = {dashboard:'لوحة التحكم', reports:'التقارير', certificates:'الشهادات', users:'إدارة المستخدمين', schedules:'جدول الحصص'};
+      const titles = {dashboard:'لوحة التحكم', reports:'التقارير', certificates:'الشهادات', users:'إدارة المستخدمين', schedules:'جدول الحصص', 'manage-schedules':'إدارة الحصص'};
       document.getElementById('page-title').textContent = titles[pageId] || tableConfigs[pageId]?.title || '';
 
       if (pageId === 'dashboard') renderDashboard();
       else if (pageId === 'reports') renderReports();
       else if (pageId === 'schedules') renderSchedules();
+      else if (pageId === 'manage-schedules') renderManageSchedules();
       else if (pageId === 'certificates') renderCertificates();
       else if (pageId === 'users') {
         if (currentUser.role === 'مدير') {
@@ -295,6 +296,263 @@
             }
           }
         } catch(e) {}
+      }
+    }
+
+    // ======== نظام إدارة الحصص المتقدم ========
+    async function renderManageSchedules() {
+      const contentDiv = document.getElementById('main-content');
+      contentDiv.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8 mb-6">
+          <h3 class="text-lg font-bold text-slate-800 mb-6">➕ إضافة حصة جديدة</h3>
+          
+          <form id="schedule-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">اليوم *</label>
+              <select id="sched-day" class="form-input mb-0" required>
+                <option value="">اختر اليوم</option>
+                <option value="الأحد">الأحد</option>
+                <option value="الاثنين">الاثنين</option>
+                <option value="الثلاثاء">الثلاثاء</option>
+                <option value="الأربعاء">الأربعاء</option>
+                <option value="الخميس">الخميس</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">رقم الحصة *</label>
+              <select id="sched-period" class="form-input mb-0" required>
+                <option value="">اختر الحصة</option>
+                <option value="1">الحصة 1</option>
+                <option value="2">الحصة 2</option>
+                <option value="3">الحصة 3</option>
+                <option value="4">الحصة 4</option>
+                <option value="5">الحصة 5</option>
+                <option value="6">الحصة 6</option>
+                <option value="7">الحصة 7</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">الفصل *</label>
+              <select id="sched-section" class="form-input mb-0" required>
+                <option value="">جاري التحميل...</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">المعلم *</label>
+              <select id="sched-teacher" class="form-input mb-0" required>
+                <option value="">جاري التحميل...</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">المادة *</label>
+              <select id="sched-subject" class="form-input mb-0" required>
+                <option value="">جاري التحميل...</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">القاعة *</label>
+              <input type="text" id="sched-room" class="form-input mb-0" placeholder="مثال: القاعة 101" required>
+            </div>
+            
+            <div class="md:col-span-2 lg:col-span-3 flex justify-end gap-3 mt-4">
+              <button type="button" onclick="resetScheduleForm()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold transition-colors">🔄 إعادة تعيين</button>
+              <button type="submit" class="btn-success flex items-center gap-2 px-8 py-3">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                حفظ الحصة
+              </button>
+            </div>
+          </form>
+        </div>
+        
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-bold text-slate-800">📋 الحصص المضافة</h3>
+            <button onclick="loadManageSchedulesList()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold transition">🔄 تحديث</button>
+          </div>
+          <div class="overflow-x-auto -mx-4 md:mx-0">
+            <table class="w-full text-sm min-w-[800px]">
+              <thead class="bg-slate-50 border-b border-slate-100">
+                <tr>
+                  <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">اليوم</th>
+                  <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الحصة</th>
+                  <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">المادة</th>
+                  <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">المعلم</th>
+                  <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الفصل</th>
+                  <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">القاعة</th>
+                  <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="manage-schedules-body" class="divide-y divide-slate-100">
+                <tr><td colspan="7" class="text-center py-12 text-slate-400">جاري التحميل...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+      
+      await loadScheduleOptions();
+      loadManageSchedulesList();
+      
+      document.getElementById('schedule-form').addEventListener('submit', handleScheduleSubmit);
+    }
+
+    async function loadScheduleOptions() {
+      try {
+        // تحميل الفصول
+        const sectionsRes = await fetch('/api/sections-list');
+        const sectionsData = await sectionsRes.json();
+        const sectionSelect = document.getElementById('sched-section');
+        if (sectionsData.success && sectionsData.data.length > 0) {
+          sectionSelect.innerHTML = '<option value="">اختر الفصل</option>';
+          sectionsData.data.forEach(s => {
+            sectionSelect.innerHTML += `<option value="${s}">${s}</option>`;
+          });
+        } else {
+          sectionSelect.innerHTML = '<option value="">لا توجد فصول</option>';
+        }
+        
+        // تحميل المعلمين
+        const teachersRes = await fetch('/api/teachers-list');
+        const teachersData = await teachersRes.json();
+        const teacherSelect = document.getElementById('sched-teacher');
+        if (teachersData.success && teachersData.data.length > 0) {
+          teacherSelect.innerHTML = '<option value="">اختر المعلم</option>';
+          teachersData.data.forEach(t => {
+            teacherSelect.innerHTML += `<option value="${t.name}" data-subject="${t.subject}">${t.name} (${t.subject})</option>`;
+          });
+        } else {
+          teacherSelect.innerHTML = '<option value="">لا يوجد معلمون</option>';
+        }
+        
+        // تحميل المواد
+        const subjectsRes = await fetch('/api/subjects-list');
+        const subjectsData = await subjectsRes.json();
+        const subjectSelect = document.getElementById('sched-subject');
+        if (subjectsData.success && subjectsData.data.length > 0) {
+          subjectSelect.innerHTML = '<option value="">اختر المادة</option>';
+          subjectsData.data.forEach(s => {
+            subjectSelect.innerHTML += `<option value="${s.name}">${s.name}</option>`;
+          });
+        } else {
+          subjectSelect.innerHTML = '<option value="">لا توجد مواد</option>';
+        }
+        
+        // عند اختيار المعلم، اختر المادة تلقائياً
+        teacherSelect.addEventListener('change', function() {
+          const selectedOption = this.options[this.selectedIndex];
+          const subject = selectedOption.getAttribute('data-subject');
+          if (subject && subjectSelect) {
+            for (let i = 0; i < subjectSelect.options.length; i++) {
+              if (subjectSelect.options[i].value === subject) {
+                subjectSelect.selectedIndex = i;
+                break;
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.error('خطأ في تحميل الخيارات:', err);
+      }
+    }
+
+    async function handleScheduleSubmit(e) {
+      e.preventDefault();
+      
+      const data = {
+        day: document.getElementById('sched-day').value,
+        period: document.getElementById('sched-period').value,
+        section: document.getElementById('sched-section').value,
+        teacher: document.getElementById('sched-teacher').value,
+        subject: document.getElementById('sched-subject').value,
+        room: document.getElementById('sched-room').value
+      };
+      
+      try {
+        const res = await fetch('/api/schedules', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        
+        if (result.success) {
+          showToast('✅ تمت إضافة الحصة بنجاح');
+          resetScheduleForm();
+          loadManageSchedulesList();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (err) {
+        showToast('❌ خطأ في الاتصال', 'error');
+      }
+    }
+
+    function resetScheduleForm() {
+      document.getElementById('schedule-form').reset();
+      document.getElementById('sched-day').selectedIndex = 0;
+      document.getElementById('sched-period').selectedIndex = 0;
+      document.getElementById('sched-section').selectedIndex = 0;
+      document.getElementById('sched-teacher').selectedIndex = 0;
+      document.getElementById('sched-subject').selectedIndex = 0;
+      document.getElementById('sched-room').value = '';
+    }
+
+    async function loadManageSchedulesList() {
+      const tbody = document.getElementById('manage-schedules-body');
+      if (!tbody) return;
+      
+      try {
+        const res = await fetch('/api/schedules');
+        const data = await res.json();
+        
+        if (!data.success || !data.data || data.data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-12 text-slate-400">لا توجد حصص مضافة</td></tr>';
+          return;
+        }
+        
+        const daysOrder = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
+        const sorted = data.data.sort((a, b) => {
+          const dayDiff = daysOrder.indexOf(a.day) - daysOrder.indexOf(b.day);
+          if (dayDiff !== 0) return dayDiff;
+          return a.period - b.period;
+        });
+        
+        tbody.innerHTML = sorted.map(row => `
+          <tr class="hover:bg-slate-50/80 transition-colors">
+            <td class="px-4 md:px-6 py-4 font-semibold text-slate-800">${row.day}</td>
+            <td class="px-4 md:px-6 py-4 text-slate-700">الحصة ${row.period}</td>
+            <td class="px-4 md:px-6 py-4 text-indigo-700 font-semibold">${row.subject}</td>
+            <td class="px-4 md:px-6 py-4 text-slate-700">${row.teacher}</td>
+            <td class="px-4 md:px-6 py-4 text-slate-700">${row.section}</td>
+            <td class="px-4 md:px-6 py-4 text-slate-700">${row.room}</td>
+            <td class="px-4 md:px-6 py-4 whitespace-nowrap">
+              <button onclick="deleteScheduleItem(${row.id}, '${row.subject}')" class="btn-action btn-delete" title="حذف">🗑️</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-12 text-red-500">❌ خطأ في الاتصال</td></tr>';
+      }
+    }
+
+    async function deleteScheduleItem(id, subject) {
+      if (!confirm(`هل أنت متأكد من حذف حصة "${subject}"؟`)) return;
+      try {
+        const res = await fetch(`/api/schedules/${id}`, { method: 'DELETE' });
+        const result = await res.json();
+        if (result.success) {
+          showToast('🗑️ تم الحذف بنجاح');
+          loadManageSchedulesList();
+        } else {
+          showToast('❌ ' + result.message, 'error');
+        }
+      } catch (err) {
+        showToast('❌ خطأ في الحذف', 'error');
       }
     }
 
@@ -598,7 +856,6 @@
       container.innerHTML = html;
     }
 
-    // ✅ دالة الطباعة المعدلة - تستخدم API الجديد مع الفلترة
     function printSchedule() {
       const section = document.getElementById('schedule-section').value;
       const view = document.getElementById('schedule-view').value;
