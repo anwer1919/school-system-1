@@ -616,7 +616,39 @@ app.get('/api/reports/schedules', async (req, res) => {
   const r = (data || []).map(function(s) { return '<tr><td>' + s.day + '</td><td>' + s.period + '</td><td>' + s.subject + '</td><td>' + (s.teacher || '-') + '</td><td>' + (s.section || '-') + '</td><td>' + (s.room || '-') + '</td></tr>'; }).join('');
   res.send(makeReport('🕐 جدول الحصص', ['اليوم', 'الحصة', 'المادة', 'المعلم', 'الفصل', 'القاعة'], r));
 });
+// ======== جلب المعلمين لإنشاء قائمة منسدلة ========
+app.get('/api/teachers-list', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('teachers').select('id, name, subject').order('name');
+    if (error) throw error;
+    res.json({ success: true, data: data || [] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 
+// ======== جلب المواد لإنشاء قائمة منسدلة ========
+app.get('/api/subjects-list', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('subjects').select('id, name').order('name');
+    if (error) throw error;
+    res.json({ success: true, data: data || [] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ======== جلب الفصول من جدول الحصص ========
+app.get('/api/sections-list', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('schedules').select('section');
+    if (error) throw error;
+    const sections = [...new Set((data || []).map(d => d.section))].filter(s => s).sort();
+    res.json({ success: true, data: sections });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 // ======== تشغيل الخادم ========
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', function() {
