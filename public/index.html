@@ -150,7 +150,7 @@
       employees: { title: 'الموظفون', columns: [{key:'name', label:'الاسم'}, {key:'role', label:'الوظيفة'}, {key:'phone', label:'الهاتف'}, {key:'salary', label:'الراتب'}], form: [{name:'name', label:'الاسم', type:'text'}, {name:'role', label:'الوظيفة', type:'text'}, {name:'phone', label:'الهاتف', type:'text'}, {name:'email', label:'البريد', type:'email'}, {name:'salary', label:'الراتب', type:'number'}] },
       parents: { title: 'أولياء الأمور', columns: [{key:'name', label:'الاسم'}, {key:'phone', label:'الهاتف'}, {key:'email', label:'البريد'}, {key:'job', label:'الوظيفة'}], form: [{name:'name', label:'الاسم', type:'text'}, {name:'phone', label:'الهاتف', type:'text'}, {name:'email', label:'البريد', type:'email'}, {name:'job', label:'الوظيفة', type:'text'}, {name:'address', label:'العنوان', type:'text'}] },
       subjects: { title: 'المواد', columns: [{key:'name', label:'المادة'}, {key:'code', label:'الكود'}, {key:'grade', label:'الصف'}], form: [{name:'name', label:'المادة', type:'text'}, {name:'code', label:'الكود', type:'text'}, {name:'grade', label:'الصف', type:'text'}] },
-      schedules: { title: 'جدول الحصص', columns: [{key:'day', label:'اليوم'}, {key:'period', label:'الحصة'}, {key:'subject', label:'المادة'}, {key:'teacher', label:'المعلم'}, {key:'room', label:'القاعة'}], form: [{name:'day', label:'اليوم', type:'select', options:['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس']}, {name:'period', label:'رقم الحصة', type:'number'}, {name:'subject', label:'المادة', type:'text'}, {name:'teacher', label:'المعلم', type:'text'}, {name:'section', label:'الشعبة', type:'text'}, {name:'room', label:'القاعة', type:'text'}] },
+      schedules: { title: 'جدول الحصص', columns: [{key:'day', label:'اليوم'}, {key:'period', label:'الحصة'}, {key:'subject', label:'المادة'}, {key:'teacher', label:'المعلم'}, {key:'section', label:'الفصل'}, {key:'room', label:'القاعة'}], form: [{name:'day', label:'اليوم', type:'select', options:['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس']}, {name:'period', label:'رقم الحصة', type:'number'}, {name:'subject', label:'المادة', type:'text'}, {name:'teacher', label:'المعلم', type:'text'}, {name:'section', label:'الفصل', type:'text'}, {name:'room', label:'القاعة', type:'text'}] },
       attendance: { title: 'الحضور', columns: [{key:'student_name', label:'الطالب'}, {key:'date', label:'التاريخ'}, {key:'status', label:'الحالة'}], form: [{name:'student_name', label:'الطالب', type:'text'}, {name:'date', label:'التاريخ', type:'date'}, {name:'status', label:'الحالة', type:'select', options:['present','absent','late']}] },
       exams: { title: 'الامتحانات', columns: [{key:'name', label:'الامتحان'}, {key:'subject', label:'المادة'}, {key:'date', label:'التاريخ'}, {key:'max_score', label:'الدرجة'}, {key:'status', label:'الحالة'}], form: [{name:'name', label:'الامتحان', type:'text'}, {name:'subject', label:'المادة', type:'text'}, {name:'grade', label:'الصف', type:'text'}, {name:'date', label:'التاريخ', type:'date'}, {name:'max_score', label:'الدرجة الكاملة', type:'number'}, {name:'status', label:'الحالة', type:'select', options:['قادم','مكتمل','ملغي']}] },
       grades: { title: 'الدرجات', columns: [{key:'student_name', label:'الطالب'}, {key:'subject', label:'المادة'}, {key:'score', label:'الدرجة'}, {key:'max_score', label:'من'}, {key:'exam_type', label:'النوع'}], form: [{name:'student_name', label:'الطالب', type:'text'}, {name:'subject', label:'المادة', type:'text'}, {name:'score', label:'الدرجة', type:'number'}, {name:'max_score', label:'من', type:'number'}, {name:'exam_type', label:'نوع الامتحان', type:'text'}, {name:'term', label:'الترم', type:'select', options:['الأول','الثاني']}] },
@@ -174,33 +174,16 @@
       const nav = document.getElementById('sidebar-nav');
       let items = [];
       
-      // إذا كان المدير، يرى كل القوائم
       if (currentUser.role === 'مدير') {
         items = allMenus;
-      }
-      // إذا كان دور محدد مسبقاً
-      else if (menuItems[currentUser.role]) {
+      } else if (menuItems[currentUser.role]) {
         items = menuItems[currentUser.role];
-      }
-      // إذا كان مخصص، استخدم allowed_menus
-      else if (currentUser.role === 'مخصص') {
+      } else if (currentUser.role === 'مخصص') {
         let allowedMenus = currentUser.allowed_menus || [];
-        
-        // إذا كان allowed_menus string، حوّله إلى array
         if (typeof allowedMenus === 'string') {
-          try {
-            allowedMenus = JSON.parse(allowedMenus);
-          } catch (e) {
-            allowedMenus = [];
-          }
+          try { allowedMenus = JSON.parse(allowedMenus); } catch (e) { allowedMenus = []; }
         }
-        
-        // تأكد أنه array
-        if (!Array.isArray(allowedMenus)) {
-          allowedMenus = [];
-        }
-        
-        // فلتر القوائم المسموحة
+        if (!Array.isArray(allowedMenus)) allowedMenus = [];
         if (allowedMenus.length > 0) {
           items = allMenus.filter(m => allowedMenus.includes(m.id));
         } else {
@@ -208,7 +191,6 @@
         }
       }
       
-      // تأكد من وجود لوحة التحكم دائماً
       if (!items.find(m => m.id === 'dashboard')) {
         items.unshift({id:'dashboard', icon:'📊', label:'لوحة التحكم'});
       }
@@ -228,11 +210,12 @@
       if (activeLink) activeLink.classList.add('active');
 
       const contentDiv = document.getElementById('main-content');
-      const titles = {dashboard:'لوحة التحكم', reports:'التقارير', certificates:'الشهادات', users:'إدارة المستخدمين'};
+      const titles = {dashboard:'لوحة التحكم', reports:'التقارير', certificates:'الشهادات', users:'إدارة المستخدمين', schedules:'جدول الحصص'};
       document.getElementById('page-title').textContent = titles[pageId] || tableConfigs[pageId]?.title || '';
 
       if (pageId === 'dashboard') renderDashboard();
       else if (pageId === 'reports') renderReports();
+      else if (pageId === 'schedules') renderSchedules();
       else if (pageId === 'certificates') renderCertificates();
       else if (pageId === 'users') {
         if (currentUser.role === 'مدير') {
@@ -315,30 +298,307 @@
       }
     }
 
+    // ======== نظام التقارير المتقدمة ========
     function renderReports() {
-      const reports = [
-        {url:'/api/reports/students', icon:'👥', title:'تقرير الطلاب', color:'from-indigo-500 to-blue-600'},
-        {url:'/api/reports/teachers', icon:'👨‍🏫', title:'تقرير المعلمين', color:'from-emerald-500 to-teal-600'},
-        {url:'/api/reports/employees', icon:'👔', title:'تقرير الموظفين', color:'from-violet-500 to-purple-600'},
-        {url:'/api/reports/attendance', icon:'📅', title:'تقرير الحضور', color:'from-rose-500 to-pink-600'},
-        {url:'/api/reports/grades', icon:'🎯', title:'كشوف الدرجات', color:'from-amber-500 to-orange-600'},
-        {url:'/api/reports/fees', icon:'💰', title:'التقرير المالي', color:'from-cyan-500 to-blue-600'},
-        {url:'/api/reports/financial', icon:'💵', title:'التقرير الشامل', color:'from-slate-600 to-slate-800'},
-        {url:'/api/reports/transport', icon:'🚌', title:'تقرير النقل', color:'from-teal-500 to-cyan-600'},
-        {url:'/api/reports/schedules', icon:'🕐', title:'جدول الحصص', color:'from-red-500 to-rose-600'}
-      ];
-      document.getElementById('main-content').innerHTML = `
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">
-          <h3 class="text-lg font-bold text-slate-800 mb-6">📄 التقارير المتاحة للطباعة</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            ${reports.map(r => `
-              <a href="${r.url}" target="_blank" class="group bg-gradient-to-br ${r.color} text-white p-5 rounded-2xl hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex items-center gap-4">
-                <span class="text-4xl group-hover:scale-110 transition-transform">${r.icon}</span>
-                <div><h4 class="font-bold text-base">${r.title}</h4><p class="text-xs opacity-90 mt-1">عرض وطباعة</p></div>
-              </a>
-            `).join('')}
+      const contentDiv = document.getElementById('main-content');
+      contentDiv.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8 mb-6">
+          <h3 class="text-lg font-bold text-slate-800 mb-6">📄 إنشاء تقرير مخصص</h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">نوع التقرير</label>
+              <select id="report-type" class="form-input mb-0">
+                <option value="attendance">📅 تقرير الحضور</option>
+                <option value="fees">💰 تقرير الرسوم</option>
+                <option value="revenue">💵 تقرير الإيرادات</option>
+                <option value="expenses">💸 تقرير المصروفات</option>
+                <option value="grades">🎯 تقرير الدرجات</option>
+                <option value="students">👥 تقرير الطلاب</option>
+                <option value="teachers">👨‍🏫 تقرير المعلمين</option>
+                <option value="transport">🚌 تقرير النقل</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">من تاريخ</label>
+              <input type="date" id="report-from" class="form-input mb-0">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">إلى تاريخ</label>
+              <input type="date" id="report-to" class="form-input mb-0">
+            </div>
+            <div class="flex items-end">
+              <button onclick="generateReport()" class="btn-primary w-full py-3">📄 إنشاء التقرير</button>
+            </div>
           </div>
-        </div>`;
+          
+          <div class="border-t border-slate-200 pt-6">
+            <h4 class="text-sm font-bold text-slate-700 mb-3">⚡ تقارير سريعة:</h4>
+            <div class="flex flex-wrap gap-3">
+              <button onclick="quickReport('today')" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-100 transition">📅 تقرير اليوم</button>
+              <button onclick="quickReport('week')" class="bg-green-50 text-green-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-100 transition">📆 تقرير الأسبوع</button>
+              <button onclick="quickReport('month')" class="bg-purple-50 text-purple-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-100 transition">🗓️ تقرير الشهر</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">
+          <h3 class="text-lg font-bold text-slate-800 mb-4">📋 التقارير الجاهزة</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <a href="/api/reports/students" target="_blank" class="bg-gradient-to-br from-indigo-500 to-blue-600 text-white p-5 rounded-xl hover:shadow-lg transition flex items-center gap-3">
+              <span class="text-3xl">👥</span>
+              <div><h4 class="font-bold">تقرير الطلاب</h4><p class="text-xs opacity-90">عرض وطباعة</p></div>
+            </a>
+            <a href="/api/reports/teachers" target="_blank" class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-5 rounded-xl hover:shadow-lg transition flex items-center gap-3">
+              <span class="text-3xl">👨‍🏫</span>
+              <div><h4 class="font-bold">تقرير المعلمين</h4><p class="text-xs opacity-90">عرض وطباعة</p></div>
+            </a>
+            <a href="/api/reports/fees" target="_blank" class="bg-gradient-to-br from-amber-500 to-orange-600 text-white p-5 rounded-xl hover:shadow-lg transition flex items-center gap-3">
+              <span class="text-3xl">💰</span>
+              <div><h4 class="font-bold">التقرير المالي</h4><p class="text-xs opacity-90">عرض وطباعة</p></div>
+            </a>
+          </div>
+        </div>
+      `;
+    }
+
+    function generateReport() {
+      const type = document.getElementById('report-type').value;
+      const dateFrom = document.getElementById('report-from').value;
+      const dateTo = document.getElementById('report-to').value;
+      
+      let url = `/api/reports/advanced?type=${type}`;
+      if (dateFrom) url += `&date_from=${dateFrom}`;
+      if (dateTo) url += `&date_to=${dateTo}`;
+      
+      window.open(url, '_blank');
+    }
+
+    function quickReport(period) {
+      const type = document.getElementById('report-type').value;
+      const today = new Date();
+      let dateFrom, dateTo;
+      
+      if (period === 'today') {
+        dateFrom = today.toISOString().split('T')[0];
+        dateTo = dateFrom;
+      } else if (period === 'week') {
+        const day = today.getDay();
+        const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(diff);
+        dateFrom = startOfWeek.toISOString().split('T')[0];
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(diff + 6);
+        dateTo = endOfWeek.toISOString().split('T')[0];
+      } else if (period === 'month') {
+        dateFrom = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+        dateTo = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+      }
+      
+      let url = `/api/reports/advanced?type=${type}&date_from=${dateFrom}&date_to=${dateTo}`;
+      window.open(url, '_blank');
+    }
+
+    // ======== نظام جدول الحصص المتقدم ========
+    async function renderSchedules() {
+      const contentDiv = document.getElementById('main-content');
+      contentDiv.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">
+          <h3 class="text-lg font-bold text-slate-800 mb-6">🕐 جدول الحصص</h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">الفصل</label>
+              <select id="schedule-section" class="form-input mb-0" onchange="loadSchedule()">
+                <option value="">جاري التحميل...</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">نوع العرض</label>
+              <select id="schedule-view" class="form-input mb-0" onchange="toggleScheduleView()">
+                <option value="weekly">📆 عرض أسبوعي (الأحد - الخميس)</option>
+                <option value="daily">📅 عرض يومي</option>
+              </select>
+            </div>
+            <div id="daily-day-selector" style="display:none">
+              <label class="block text-sm font-semibold text-slate-700 mb-2">اليوم</label>
+              <select id="schedule-day" class="form-input mb-0" onchange="loadSchedule()">
+                <option value="الأحد">الأحد</option>
+                <option value="الاثنين">الاثنين</option>
+                <option value="الثلاثاء">الثلاثاء</option>
+                <option value="الأربعاء">الأربعاء</option>
+                <option value="الخميس">الخميس</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="flex justify-end mb-4">
+            <button onclick="printSchedule()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+              طباعة الجدول
+            </button>
+          </div>
+          
+          <div id="schedule-container" class="overflow-x-auto">
+            <div class="text-center py-12 text-slate-400">جاري تحميل جدول الحصص...</div>
+          </div>
+        </div>
+      `;
+      
+      await loadSections();
+      loadSchedule();
+    }
+
+    async function loadSections() {
+      try {
+        const res = await fetch('/api/sections');
+        const data = await res.json();
+        const select = document.getElementById('schedule-section');
+        
+        if (data.success && data.data) {
+          select.innerHTML = '<option value="all">جميع الفصول</option>';
+          data.data.forEach(section => {
+            const option = document.createElement('option');
+            option.value = section;
+            option.textContent = section;
+            select.appendChild(option);
+          });
+        }
+      } catch (err) {
+        console.error('خطأ في تحميل الفصول:', err);
+      }
+    }
+
+    function toggleScheduleView() {
+      const view = document.getElementById('schedule-view').value;
+      const dailySelector = document.getElementById('daily-day-selector');
+      
+      if (view === 'daily') {
+        dailySelector.style.display = 'block';
+      } else {
+        dailySelector.style.display = 'none';
+      }
+      
+      loadSchedule();
+    }
+
+    async function loadSchedule() {
+      const section = document.getElementById('schedule-section').value;
+      const view = document.getElementById('schedule-view').value;
+      const container = document.getElementById('schedule-container');
+      
+      container.innerHTML = '<div class="text-center py-12 text-slate-400">جاري التحميل...</div>';
+      
+      try {
+        let url = `/api/schedules/weekly?section=${section}&view=${view}`;
+        
+        if (view === 'daily') {
+          const day = document.getElementById('schedule-day').value;
+          url += `&day=${encodeURIComponent(day)}`;
+        }
+        
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (!data.success) {
+          container.innerHTML = '<div class="text-center py-12 text-red-500">❌ خطأ في التحميل</div>';
+          return;
+        }
+        
+        if (view === 'daily') {
+          renderDailySchedule(data);
+        } else {
+          renderWeeklySchedule(data);
+        }
+      } catch (err) {
+        container.innerHTML = '<div class="text-center py-12 text-red-500">❌ خطأ في الاتصال</div>';
+      }
+    }
+
+    function renderWeeklySchedule(data) {
+      const container = document.getElementById('schedule-container');
+      const section = document.getElementById('schedule-section').value;
+      const sectionName = section === 'all' ? 'جميع الفصول' : section;
+      
+      let html = `<h4 class="text-lg font-bold text-slate-800 mb-4">📆 الجدول الأسبوعي - ${sectionName}</h4>`;
+      html += '<table class="w-full text-sm min-w-[800px] border-collapse">';
+      html += '<thead><tr class="bg-slate-800 text-white">';
+      html += '<th class="px-4 py-3 border border-slate-600">الحصة</th>';
+      
+      data.days.forEach(day => {
+        html += `<th class="px-4 py-3 border border-slate-600">${day}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+      
+      data.periods.forEach(period => {
+        html += `<tr class="${period % 2 === 0 ? 'bg-slate-50' : 'bg-white'}">`;
+        html += `<td class="px-4 py-3 border border-slate-200 font-bold text-slate-700 text-center">الحصة ${period}</td>`;
+        
+        data.days.forEach(day => {
+          const item = data.data[day][period];
+          if (item) {
+            html += `<td class="px-4 py-3 border border-slate-200 text-center">
+              <div class="font-semibold text-indigo-700">${item.subject}</div>
+              <div class="text-xs text-slate-500 mt-1">${item.teacher}</div>
+              <div class="text-xs text-slate-400">${item.room}</div>
+            </td>`;
+          } else {
+            html += '<td class="px-4 py-3 border border-slate-200 text-center text-slate-300">-</td>';
+          }
+        });
+        
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function renderDailySchedule(data) {
+      const container = document.getElementById('schedule-container');
+      const section = document.getElementById('schedule-section').value;
+      const sectionName = section === 'all' ? 'جميع الفصول' : section;
+      
+      let html = `<h4 class="text-lg font-bold text-slate-800 mb-4">📅 جدول يوم ${data.day} - ${sectionName}</h4>`;
+      html += '<table class="w-full text-sm border-collapse">';
+      html += '<thead><tr class="bg-slate-800 text-white">';
+      html += '<th class="px-4 py-3 border border-slate-600">الحصة</th>';
+      html += '<th class="px-4 py-3 border border-slate-600">المادة</th>';
+      html += '<th class="px-4 py-3 border border-slate-600">المعلم</th>';
+      html += '<th class="px-4 py-3 border border-slate-600">القاعة</th>';
+      html += '</tr></thead><tbody>';
+      
+      if (data.data.length === 0) {
+        html += '<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">لا توجد حصص لهذا اليوم</td></tr>';
+      } else {
+        data.data.forEach(item => {
+          html += `<tr class="hover:bg-slate-50 transition">
+            <td class="px-4 py-3 border border-slate-200 text-center font-bold text-slate-700">الحصة ${item.period}</td>
+            <td class="px-4 py-3 border border-slate-200 font-semibold text-indigo-700">${item.subject}</td>
+            <td class="px-4 py-3 border border-slate-200 text-slate-600">${item.teacher}</td>
+            <td class="px-4 py-3 border border-slate-200 text-slate-600">${item.room}</td>
+          </tr>`;
+        });
+      }
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function printSchedule() {
+      const section = document.getElementById('schedule-section').value;
+      const view = document.getElementById('schedule-view').value;
+      const sectionName = section === 'all' ? 'جميع الفصول' : section;
+      
+      let url = `/api/reports/schedules?section=${section}&view=${view}`;
+      
+      if (view === 'daily') {
+        const day = document.getElementById('schedule-day').value;
+        url += `&day=${encodeURIComponent(day)}`;
+      }
+      
+      window.open(url, '_blank');
     }
 
     async function renderCertificates() {
