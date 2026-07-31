@@ -93,7 +93,7 @@
       <div id="main-content" class="p-4 md:p-8 max-w-7xl mx-auto w-full flex-1"></div>
     </main>
   </div>
-  <script>
+    <script>
     const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
     if (!currentUser || !currentUser.role) window.location.href = '/login';
     const userRole = currentUser.role;
@@ -279,7 +279,7 @@
       ];
       for (const s of stats) {
         try {
-          const res = await fetch(`/api/${s.table}`);
+          const res = await fetch('/api/' + s.table);
           const data = await res.json();
           const el = document.getElementById(s.id);
           if (el && data.success) {
@@ -292,48 +292,28 @@
       }
     }
 
-    // ======== دالة رفع الصورة ========
     async function uploadPhoto(file) {
-      const formData = new FormData();
-      formData.append('photo', file);
-      try {
-        const res = await fetch('/api/upload', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.success) return data.url;
-        else { showToast('❌ ' + data.message, 'error'); return null; }
-      } catch (err) { showToast('❌ خطأ في رفع الصورة', 'error'); return null; }
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = function(e) { resolve(e.target.result); };
+        reader.readAsDataURL(file);
+      });
     }
 
     // ======== سجلات الطلاب ========
     async function renderStudentRecords() {
       const contentDiv = document.getElementById('main-content');
-      contentDiv.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8 mb-6">
-          <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">🔍 البحث في سجلات الطلاب</h3>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-2">نوع البحث</label>
-              <select id="search-field" class="form-input mb-0">
-                <option value="name">الاسم</option>
-                <option value="number">الرقم</option>
-                <option value="grade">الصف</option>
-              </select>
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-sm font-semibold text-slate-700 mb-2">ابحث عن...</label>
-              <input type="text" id="search-query" class="form-input mb-0" placeholder="اكتب اسم الطالب أو رقمه أو صفه" onkeypress="if(event.key==='Enter') searchStudents()">
-            </div>
-            <div class="flex items-end">
-              <button onclick="searchStudents()" class="btn-primary w-full py-3">🔍 بحث</button>
-            </div>
-          </div>
-        </div>
-        <div id="student-results" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">
-          <div class="text-center py-16">
-            <div class="text-6xl mb-4">📋</div>
-            <div class="text-slate-400 font-semibold">استخدم البحث أعلاه لعرض سجلات الطلاب</div>
-          </div>
-        </div>`;
+      contentDiv.innerHTML = '<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8 mb-6">' +
+        '<h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">🔍 البحث في سجلات الطلاب</h3>' +
+        '<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">نوع البحث</label>' +
+        '<select id="search-field" class="form-input mb-0">' +
+        '<option value="name">الاسم</option><option value="number">الرقم</option><option value="grade">الصف</option></select></div>' +
+        '<div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-700 mb-2">ابحث عن...</label>' +
+        '<input type="text" id="search-query" class="form-input mb-0" placeholder="اكتب اسم الطالب أو رقمه أو صفه" onkeypress="if(event.key===\'Enter\') searchStudents()"></div>' +
+        '<div class="flex items-end"><button onclick="searchStudents()" class="btn-primary w-full py-3">🔍 بحث</button></div></div></div>' +
+        '<div id="student-results" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">' +
+        '<div class="text-center py-16"><div class="text-6xl mb-4">📋</div><div class="text-slate-400 font-semibold">استخدم البحث أعلاه لعرض سجلات الطلاب</div></div></div>';
     }
 
     async function searchStudents() {
@@ -343,157 +323,126 @@
       if (!query) { resultsDiv.innerHTML = '<div class="text-center py-12 text-red-500 font-semibold">❌ الرجاء إدخال كلمة البحث</div>'; return; }
       resultsDiv.innerHTML = '<div class="text-center py-12 text-slate-400">جاري البحث...</div>';
       try {
-        const res = await fetch(`/api/students/search?query=${encodeURIComponent(query)}&field=${field}`);
+        const res = await fetch('/api/students/search?query=' + encodeURIComponent(query) + '&field=' + field);
         const data = await res.json();
         if (!data.success || data.data.length === 0) {
           resultsDiv.innerHTML = '<div class="text-center py-16"><div class="text-6xl mb-4">🔍</div><div class="text-slate-400 font-semibold">لا توجد نتائج</div></div>';
           return;
         }
-        resultsDiv.innerHTML = `
-          <h3 class="text-lg font-bold text-slate-800 mb-4">📋 نتائج البحث (${data.count})</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            ${data.data.map(s => `
-              <div class="bg-gradient-to-br from-white to-slate-50 border-2 border-slate-200 rounded-2xl p-5 hover:shadow-xl hover:border-indigo-300 transition-all cursor-pointer" onclick="viewStudentDetails(${s.id})">
-                <div class="flex items-center gap-4 mb-4">
-                  <div class="w-16 h-16 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-full flex items-center justify-center text-3xl overflow-hidden flex-shrink-0 border-2 border-white shadow-md">
-                    ${s.photo ? `<img src="${s.photo}" class="w-full h-full object-cover">` : '👤'}
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <h4 class="font-bold text-lg text-slate-800 truncate">${s.name}</h4>
-                    <p class="text-sm text-slate-500">${s.student_number || 'لا يوجد رقم'}</p>
-                  </div>
-                </div>
-                <div class="space-y-2 text-sm border-t border-slate-100 pt-3">
-                  <div class="flex justify-between"><span class="text-slate-500">الصف:</span><span class="font-semibold">${s.grade || '-'}</span></div>
-                  <div class="flex justify-between"><span class="text-slate-500">الشعبة:</span><span class="font-semibold">${s.section || '-'}</span></div>
-                </div>
-                <button onclick="event.stopPropagation(); viewStudentDetails(${s.id})" class="mt-4 w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-2.5 rounded-xl font-bold hover:shadow-lg transition">عرض السجل الكامل</button>
-              </div>
-            `).join('')}
-          </div>`;
+        resultsDiv.innerHTML = '<h3 class="text-lg font-bold text-slate-800 mb-4">📋 نتائج البحث (' + data.count + ')</h3>' +
+          '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">' +
+          data.data.map(function(s) {
+            return '<div class="bg-gradient-to-br from-white to-slate-50 border-2 border-slate-200 rounded-2xl p-5 hover:shadow-xl hover:border-indigo-300 transition-all cursor-pointer" onclick="viewStudentDetails(' + s.id + ')">' +
+              '<div class="flex items-center gap-4 mb-4">' +
+              '<div class="w-16 h-16 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-full flex items-center justify-center text-3xl overflow-hidden flex-shrink-0 border-2 border-white shadow-md">' +
+              (s.photo ? '<img src="' + s.photo + '" class="w-full h-full object-cover">' : '👤') + '</div>' +
+              '<div class="flex-1 min-w-0"><h4 class="font-bold text-lg text-slate-800 truncate">' + s.name + '</h4>' +
+              '<p class="text-sm text-slate-500">' + (s.student_number || 'لا يوجد رقم') + '</p></div></div>' +
+              '<div class="space-y-2 text-sm border-t border-slate-100 pt-3">' +
+              '<div class="flex justify-between"><span class="text-slate-500">الصف:</span><span class="font-semibold">' + (s.grade || '-') + '</span></div>' +
+              '<div class="flex justify-between"><span class="text-slate-500">الشعبة:</span><span class="font-semibold">' + (s.section || '-') + '</span></div></div>' +
+              '<button onclick="event.stopPropagation(); viewStudentDetails(' + s.id + ')" class="mt-4 w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-2.5 rounded-xl font-bold hover:shadow-lg transition">عرض السجل الكامل</button></div>';
+          }).join('') + '</div>';
       } catch (err) { resultsDiv.innerHTML = '<div class="text-center py-12 text-red-500">❌ خطأ في الاتصال</div>'; }
     }
 
     async function viewStudentDetails(id) {
       try {
-        const res = await fetch(`/api/students/${id}`);
+        const res = await fetch('/api/students/' + id);
         const data = await res.json();
         if (!data.success) { showToast('❌ خطأ في تحميل البيانات', 'error'); return; }
         const student = data.data;
         const parent = student.parent;
         const fees = student.fees || [];
         let totalFees = 0, paidFees = 0;
-        fees.forEach(f => { totalFees += Number(f.amount) || 0; if (f.status === 'paid') paidFees += Number(f.amount) || 0; });
+        fees.forEach(function(f) { totalFees += Number(f.amount) || 0; if (f.status === 'paid') paidFees += Number(f.amount) || 0; });
         const contentDiv = document.getElementById('student-results');
-        contentDiv.innerHTML = `
-          <div class="bg-gradient-to-br from-indigo-50 via-white to-blue-50 rounded-2xl shadow-xl border-2 border-indigo-100 p-6 md:p-8">
-            <div class="flex justify-between items-start mb-6 flex-wrap gap-3">
-              <h3 class="text-2xl font-extrabold text-slate-800">📋 السجل الكامل للطالب</h3>
-              <button onclick="renderStudentRecords()" class="bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-xl font-bold transition border border-slate-200 shadow-sm">← رجوع</button>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-              <div class="lg:col-span-1">
-                <div class="bg-white rounded-2xl p-6 shadow-lg text-center border border-slate-100">
-                  <div class="w-32 h-32 mx-auto bg-gradient-to-br from-indigo-100 to-blue-100 rounded-full flex items-center justify-center text-6xl overflow-hidden mb-4 border-4 border-white shadow-xl">
-                    ${student.photo ? `<img src="${student.photo}" class="w-full h-full object-cover">` : '👤'}
-                  </div>
-                  <h4 class="text-xl font-extrabold text-slate-800 mb-2">${student.name}</h4>
-                  <p class="text-sm text-slate-500 mb-4">رقم الطالب: <span class="font-bold text-indigo-600">${student.student_number || 'غير محدد'}</span></p>
-                  <button onclick="window.open('/api/cards/print/student/${student.id}', '_blank')" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-xl font-bold hover:shadow-lg transition">🎫 طباعة بطاقة الطالب</button>
-                </div>
-              </div>
-              <div class="lg:col-span-2 space-y-4">
-                <div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
-                  <h5 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">👤 البيانات الشخصية</h5>
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                    <div><span class="text-slate-500">الاسم الكامل:</span><div class="font-bold mt-1">${student.name}</div></div>
-                    <div><span class="text-slate-500">النوع:</span><div class="font-bold mt-1">${student.gender || '-'}</div></div>
-                    <div><span class="text-slate-500">تاريخ الميلاد:</span><div class="font-bold mt-1">${student.birth_date || '-'}</div></div>
-                    <div><span class="text-slate-500">الصف:</span><div class="font-bold mt-1">${student.grade || '-'}</div></div>
-                    <div><span class="text-slate-500">الشعبة:</span><div class="font-bold mt-1">${student.section || '-'}</div></div>
-                    <div><span class="text-slate-500">الهاتف:</span><div class="font-bold mt-1">${student.phone || '-'}</div></div>
-                    <div class="sm:col-span-2"><span class="text-slate-500">العنوان:</span><div class="font-bold mt-1">${student.address || '-'}</div></div>
-                  </div>
-                </div>
-                ${parent ? `
-                  <div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
-                    <h5 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">👨‍👩‍👧 بيانات ولي الأمر</h5>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                      <div><span class="text-slate-500">الاسم:</span><div class="font-bold mt-1">${parent.name}</div></div>
-                      <div><span class="text-slate-500">الهاتف:</span><div class="font-bold mt-1">${parent.phone || '-'}</div></div>
-                      <div><span class="text-slate-500">البريد:</span><div class="font-bold mt-1">${parent.email || '-'}</div></div>
-                      <div><span class="text-slate-500">الوظيفة:</span><div class="font-bold mt-1">${parent.job || '-'}</div></div>
-                    </div>
-                  </div>
-                ` : ''}
-                <div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
-                  <h5 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">💰 الرسوم الدراسية</h5>
-                  <div class="grid grid-cols-3 gap-3 mb-4">
-                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 text-center border border-blue-100">
-                      <div class="text-xs text-slate-500 font-semibold">الإجمالي</div>
-                      <div class="text-xl font-extrabold text-blue-600 mt-1">${totalFees} ج</div>
-                    </div>
-                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 text-center border border-green-100">
-                      <div class="text-xs text-slate-500 font-semibold">المدفوع</div>
-                      <div class="text-xl font-extrabold text-green-600 mt-1">${paidFees} ج</div>
-                    </div>
-                    <div class="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-4 text-center border border-red-100">
-                      <div class="text-xs text-slate-500 font-semibold">المتبقي</div>
-                      <div class="text-xl font-extrabold text-red-600 mt-1">${totalFees - paidFees} ج</div>
-                    </div>
-                  </div>
-                  ${fees.length > 0 ? `
-                    <div class="overflow-x-auto">
-                      <table class="w-full text-sm">
-                        <thead class="bg-slate-50">
-                          <tr><th class="px-4 py-2 text-right font-semibold">النوع</th><th class="px-4 py-2 text-right font-semibold">المبلغ</th><th class="px-4 py-2 text-right font-semibold">الحالة</th></tr>
-                        </thead>
-                        <tbody>
-                          ${fees.map(f => `<tr class="border-t"><td class="px-4 py-2">${f.type || '-'}</td><td class="px-4 py-2 font-bold">${f.amount} ج</td><td class="px-4 py-2">${f.status === 'paid' ? '<span class="status-badge status-active">مدفوع</span>' : '<span class="status-badge status-inactive">غير مدفوع</span>'}</td></tr>`).join('')}
-                        </tbody>
-                      </table>
-                    </div>
-                  ` : '<p class="text-center text-slate-400 py-4">لا توجد رسوم مسجلة</p>'}
-                </div>
-              </div>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-3">
-              <button onclick="window.open('/certificate/${student.id}', '_blank')" class="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-3 rounded-xl font-bold hover:shadow-lg transition">🎓 طباعة الشهادة</button>
-              <button onclick="window.print()" class="flex-1 bg-white hover:bg-slate-50 text-slate-700 py-3 rounded-xl font-bold transition border border-slate-200">🖨️ طباعة السجل</button>
-            </div>
-          </div>`;
+        contentDiv.innerHTML = '<div class="bg-gradient-to-br from-indigo-50 via-white to-blue-50 rounded-3xl shadow-2xl border-2 border-indigo-200 p-6 md:p-10">' +
+          '<div class="flex justify-between items-start mb-8 flex-wrap gap-3">' +
+          '<div><h3 class="text-3xl font-extrabold text-slate-800 mb-2">📋 السجل الكامل للطالب</h3>' +
+          '<p class="text-sm text-slate-500">جميع المعلومات والبيانات المالية</p></div>' +
+          '<button onclick="renderStudentRecords()" class="bg-white hover:bg-slate-50 text-slate-700 px-6 py-3 rounded-xl font-bold transition border border-slate-200 shadow-sm flex items-center gap-2">' +
+          '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg> رجوع</button></div>' +
+          '<div class="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl p-8 mb-6 text-white shadow-xl">' +
+          '<div class="flex items-center gap-6 flex-wrap">' +
+          '<div class="w-32 h-32 bg-white/20 rounded-2xl flex items-center justify-center text-6xl overflow-hidden border-4 border-white/30 shadow-lg flex-shrink-0">' +
+          (student.photo ? '<img src="' + student.photo + '" class="w-full h-full object-cover">' : '👤') + '</div>' +
+          '<div class="flex-1 min-w-[200px]">' +
+          '<h4 class="text-3xl font-extrabold mb-3">' + student.name + '</h4>' +
+          '<div class="grid grid-cols-2 gap-3 text-sm">' +
+          '<div class="bg-white/10 backdrop-blur px-4 py-2 rounded-lg"><span class="opacity-80">رقم الطالب:</span> <span class="font-bold">' + (student.student_number || 'غير محدد') + '</span></div>' +
+          '<div class="bg-white/10 backdrop-blur px-4 py-2 rounded-lg"><span class="opacity-80">الصف:</span> <span class="font-bold">' + (student.grade || '-') + ' - ' + (student.section || '-') + '</span></div>' +
+          '<div class="bg-white/10 backdrop-blur px-4 py-2 rounded-lg"><span class="opacity-80">النوع:</span> <span class="font-bold">' + (student.gender || '-') + '</span></div>' +
+          '<div class="bg-white/10 backdrop-blur px-4 py-2 rounded-lg"><span class="opacity-80">تاريخ الميلاد:</span> <span class="font-bold">' + (student.birth_date || '-') + '</span></div>' +
+          '</div></div></div></div>' +
+          '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">' +
+          '<div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">' +
+          '<h5 class="text-xl font-bold text-slate-800 mb-5 flex items-center gap-2 pb-3 border-b-2 border-indigo-100">📞 معلومات الاتصال</h5>' +
+          '<div class="space-y-4">' +
+          '<div class="flex items-start gap-3"><div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-xl flex-shrink-0">📱</div><div><div class="text-xs text-slate-500 font-semibold">رقم الهاتف</div><div class="font-bold text-slate-800">' + (student.phone || 'غير محدد') + '</div></div></div>' +
+          '<div class="flex items-start gap-3"><div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-xl flex-shrink-0">🏠</div><div><div class="text-xs text-slate-500 font-semibold">العنوان</div><div class="font-bold text-slate-800">' + (student.address || 'غير محدد') + '</div></div></div>' +
+          '</div></div>' +
+          (parent ? '<div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">' +
+          '<h5 class="text-xl font-bold text-slate-800 mb-5 flex items-center gap-2 pb-3 border-b-2 border-indigo-100">👨‍👩‍👧 بيانات ولي الأمر</h5>' +
+          '<div class="space-y-4">' +
+          '<div class="flex items-start gap-3"><div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-xl flex-shrink-0">👤</div><div><div class="text-xs text-slate-500 font-semibold">الاسم</div><div class="font-bold text-slate-800">' + parent.name + '</div></div></div>' +
+          '<div class="flex items-start gap-3"><div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-xl flex-shrink-0">📞</div><div><div class="text-xs text-slate-500 font-semibold">الهاتف</div><div class="font-bold text-slate-800">' + (parent.phone || 'غير محدد') + '</div></div></div>' +
+          '<div class="flex items-start gap-3"><div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-xl flex-shrink-0">📧</div><div><div class="text-xs text-slate-500 font-semibold">البريد الإلكتروني</div><div class="font-bold text-slate-800">' + (parent.email || 'غير محدد') + '</div></div></div>' +
+          '<div class="flex items-start gap-3"><div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-xl flex-shrink-0">💼</div><div><div class="text-xs text-slate-500 font-semibold">الوظيفة</div><div class="font-bold text-slate-800">' + (parent.job || 'غير محدد') + '</div></div></div>' +
+          '</div></div>' : '') +
+          '</div>' +
+          '<div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 mb-6">' +
+          '<h5 class="text-xl font-bold text-slate-800 mb-5 flex items-center gap-2 pb-3 border-b-2 border-indigo-100">💰 الرسوم الدراسية</h5>' +
+          '<div class="grid grid-cols-3 gap-4 mb-6">' +
+          '<div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-center text-white shadow-lg">' +
+          '<div class="text-xs opacity-90 font-semibold mb-1">الإجمالي</div>' +
+          '<div class="text-3xl font-extrabold">' + totalFees + '</div>' +
+          '<div class="text-xs opacity-90 mt-1">جنيه</div></div>' +
+          '<div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-5 text-center text-white shadow-lg">' +
+          '<div class="text-xs opacity-90 font-semibold mb-1">المدفوع</div>' +
+          '<div class="text-3xl font-extrabold">' + paidFees + '</div>' +
+          '<div class="text-xs opacity-90 mt-1">جنيه</div></div>' +
+          '<div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-5 text-center text-white shadow-lg">' +
+          '<div class="text-xs opacity-90 font-semibold mb-1">المتبقي</div>' +
+          '<div class="text-3xl font-extrabold">' + (totalFees - paidFees) + '</div>' +
+          '<div class="text-xs opacity-90 mt-1">جنيه</div></div></div>' +
+          (fees.length > 0 ? '<div class="overflow-x-auto"><table class="w-full text-sm">' +
+          '<thead class="bg-slate-50"><tr>' +
+          '<th class="px-4 py-3 text-right font-bold text-slate-700 border-b-2 border-slate-200">النوع</th>' +
+          '<th class="px-4 py-3 text-right font-bold text-slate-700 border-b-2 border-slate-200">المبلغ</th>' +
+          '<th class="px-4 py-3 text-right font-bold text-slate-700 border-b-2 border-slate-200">تاريخ الاستحقاق</th>' +
+          '<th class="px-4 py-3 text-right font-bold text-slate-700 border-b-2 border-slate-200">الحالة</th>' +
+          '</tr></thead><tbody>' +
+          fees.map(function(f) { return '<tr class="border-b border-slate-100 hover:bg-slate-50 transition">' +
+          '<td class="px-4 py-3 font-semibold">' + (f.type || '-') + '</td>' +
+          '<td class="px-4 py-3 font-bold text-indigo-600">' + f.amount + ' جنيه</td>' +
+          '<td class="px-4 py-3 text-slate-600">' + (f.due_date || '-') + '</td>' +
+          '<td class="px-4 py-3">' + (f.status === 'paid' ? '<span class="status-badge status-active">مدفوع</span>' : '<span class="status-badge status-inactive">غير مدفوع</span>') + '</td>' +
+          '</tr>'; }).join('') +
+          '</tbody></table></div>' : '<div class="text-center py-8"><div class="text-5xl mb-3">💳</div><p class="text-slate-400 font-semibold">لا توجد رسوم مسجلة</p></div>') +
+          '</div>' +
+          '<div class="flex flex-col sm:flex-row gap-3">' +
+          '<button onclick="window.open(\'/api/cards/print/student/' + student.id + '\', \'_blank\')" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold hover:shadow-xl transition flex items-center justify-center gap-2">🎫 طباعة بطاقة الطالب</button>' +
+          '<button onclick="window.open(\'/certificate/' + student.id + '\', \'_blank\')" class="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-4 rounded-xl font-bold hover:shadow-xl transition flex items-center justify-center gap-2">🎓 طباعة الشهادة</button>' +
+          '<button onclick="window.print()" class="flex-1 bg-white hover:bg-slate-50 text-slate-700 py-4 rounded-xl font-bold transition border-2 border-slate-200 flex items-center justify-center gap-2">🖨️ طباعة السجل</button>' +
+          '</div></div>';
       } catch (err) { showToast('❌ خطأ في تحميل البيانات', 'error'); }
     }
 
     // ======== سجلات المعلمين ========
     async function renderTeacherRecords() {
       const contentDiv = document.getElementById('main-content');
-      contentDiv.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8 mb-6">
-          <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">🔍 البحث في سجلات المعلمين</h3>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-2">نوع البحث</label>
-              <select id="teacher-search-field" class="form-input mb-0">
-                <option value="name">الاسم</option>
-                <option value="subject">المادة</option>
-              </select>
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-sm font-semibold text-slate-700 mb-2">ابحث عن...</label>
-              <input type="text" id="teacher-search-query" class="form-input mb-0" placeholder="اكتب اسم المعلم أو المادة" onkeypress="if(event.key==='Enter') searchTeachers()">
-            </div>
-            <div class="flex items-end">
-              <button onclick="searchTeachers()" class="btn-primary w-full py-3">🔍 بحث</button>
-            </div>
-          </div>
-        </div>
-        <div id="teacher-results" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">
-          <div class="text-center py-16">
-            <div class="text-6xl mb-4">👨‍🏫</div>
-            <div class="text-slate-400 font-semibold">استخدم البحث أعلاه لعرض سجلات المعلمين</div>
-          </div>
-        </div>`;
+      contentDiv.innerHTML = '<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8 mb-6">' +
+        '<h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">🔍 البحث في سجلات المعلمين</h3>' +
+        '<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">نوع البحث</label>' +
+        '<select id="teacher-search-field" class="form-input mb-0">' +
+        '<option value="name">الاسم</option><option value="subject">المادة</option></select></div>' +
+        '<div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-700 mb-2">ابحث عن...</label>' +
+        '<input type="text" id="teacher-search-query" class="form-input mb-0" placeholder="اكتب اسم المعلم أو المادة" onkeypress="if(event.key===\'Enter\') searchTeachers()"></div>' +
+        '<div class="flex items-end"><button onclick="searchTeachers()" class="btn-primary w-full py-3">🔍 بحث</button></div></div></div>' +
+        '<div id="teacher-results" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">' +
+        '<div class="text-center py-16"><div class="text-6xl mb-4">👨‍🏫</div><div class="text-slate-400 font-semibold">استخدم البحث أعلاه لعرض سجلات المعلمين</div></div></div>';
     }
 
     async function searchTeachers() {
@@ -503,110 +452,95 @@
       if (!query) { resultsDiv.innerHTML = '<div class="text-center py-12 text-red-500 font-semibold">❌ الرجاء إدخال كلمة البحث</div>'; return; }
       resultsDiv.innerHTML = '<div class="text-center py-12 text-slate-400">جاري البحث...</div>';
       try {
-        const res = await fetch(`/api/teachers/search?query=${encodeURIComponent(query)}&field=${field}`);
+        const res = await fetch('/api/teachers/search?query=' + encodeURIComponent(query) + '&field=' + field);
         const data = await res.json();
         if (!data.success || data.data.length === 0) {
           resultsDiv.innerHTML = '<div class="text-center py-16"><div class="text-6xl mb-4">🔍</div><div class="text-slate-400 font-semibold">لا توجد نتائج</div></div>';
           return;
         }
-        resultsDiv.innerHTML = `
-          <h3 class="text-lg font-bold text-slate-800 mb-4">📋 نتائج البحث (${data.count})</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            ${data.data.map(t => `
-              <div class="bg-gradient-to-br from-white to-slate-50 border-2 border-slate-200 rounded-2xl p-5 hover:shadow-xl hover:border-emerald-300 transition-all cursor-pointer" onclick="viewTeacherDetails(${t.id})">
-                <div class="flex items-center gap-4 mb-4">
-                  <div class="w-16 h-16 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center text-3xl overflow-hidden flex-shrink-0 border-2 border-white shadow-md">
-                    ${t.photo ? `<img src="${t.photo}" class="w-full h-full object-cover">` : '👨‍🏫'}
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <h4 class="font-bold text-lg text-slate-800 truncate">${t.name}</h4>
-                    <p class="text-sm text-slate-500">${t.subject || 'لا توجد مادة'}</p>
-                  </div>
-                </div>
-                <div class="space-y-2 text-sm border-t border-slate-100 pt-3">
-                  <div class="flex justify-between"><span class="text-slate-500">الهاتف:</span><span class="font-semibold">${t.phone || '-'}</span></div>
-                  <div class="flex justify-between"><span class="text-slate-500">الراتب:</span><span class="font-semibold">${t.salary || 0} ج</span></div>
-                </div>
-                <button onclick="event.stopPropagation(); viewTeacherDetails(${t.id})" class="mt-4 w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-2.5 rounded-xl font-bold hover:shadow-lg transition">عرض السجل الكامل</button>
-              </div>
-            `).join('')}
-          </div>`;
+        resultsDiv.innerHTML = '<h3 class="text-lg font-bold text-slate-800 mb-4">📋 نتائج البحث (' + data.count + ')</h3>' +
+          '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">' +
+          data.data.map(function(t) {
+            return '<div class="bg-gradient-to-br from-white to-slate-50 border-2 border-slate-200 rounded-2xl p-5 hover:shadow-xl hover:border-emerald-300 transition-all cursor-pointer" onclick="viewTeacherDetails(' + t.id + ')">' +
+              '<div class="flex items-center gap-4 mb-4">' +
+              '<div class="w-16 h-16 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center text-3xl overflow-hidden flex-shrink-0 border-2 border-white shadow-md">' +
+              (t.photo ? '<img src="' + t.photo + '" class="w-full h-full object-cover">' : '👨‍🏫') + '</div>' +
+              '<div class="flex-1 min-w-0"><h4 class="font-bold text-lg text-slate-800 truncate">' + t.name + '</h4>' +
+              '<p class="text-sm text-slate-500">' + (t.subject || 'لا توجد مادة') + '</p></div></div>' +
+              '<div class="space-y-2 text-sm border-t border-slate-100 pt-3">' +
+              '<div class="flex justify-between"><span class="text-slate-500">الهاتف:</span><span class="font-semibold">' + (t.phone || '-') + '</span></div>' +
+              '<div class="flex justify-between"><span class="text-slate-500">الراتب:</span><span class="font-semibold">' + (t.salary || 0) + ' ج</span></div></div>' +
+              '<button onclick="event.stopPropagation(); viewTeacherDetails(' + t.id + ')" class="mt-4 w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-2.5 rounded-xl font-bold hover:shadow-lg transition">عرض السجل الكامل</button></div>';
+          }).join('') + '</div>';
       } catch (err) { resultsDiv.innerHTML = '<div class="text-center py-12 text-red-500">❌ خطأ في الاتصال</div>'; }
     }
 
     async function viewTeacherDetails(id) {
       try {
-        const res = await fetch(`/api/teachers/${id}`);
+        const res = await fetch('/api/teachers/' + id);
         const data = await res.json();
         if (!data.success) { showToast('❌ خطأ في تحميل البيانات', 'error'); return; }
         const teacher = data.data;
         const contentDiv = document.getElementById('teacher-results');
-        contentDiv.innerHTML = `
-          <div class="bg-gradient-to-br from-emerald-50 via-white to-teal-50 rounded-2xl shadow-xl border-2 border-emerald-100 p-6 md:p-8">
-            <div class="flex justify-between items-start mb-6 flex-wrap gap-3">
-              <h3 class="text-2xl font-extrabold text-slate-800">📋 السجل الكامل للمعلم</h3>
-              <button onclick="renderTeacherRecords()" class="bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-xl font-bold transition border border-slate-200 shadow-sm">← رجوع</button>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div class="lg:col-span-1">
-                <div class="bg-white rounded-2xl p-6 shadow-lg text-center border border-slate-100">
-                  <div class="w-32 h-32 mx-auto bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center text-6xl overflow-hidden mb-4 border-4 border-white shadow-xl">
-                    ${teacher.photo ? `<img src="${teacher.photo}" class="w-full h-full object-cover">` : '👨‍🏫'}
-                  </div>
-                  <h4 class="text-xl font-extrabold text-slate-800 mb-2">${teacher.name}</h4>
-                  <p class="text-sm text-slate-500 mb-4">${teacher.subject || 'لا توجد مادة'}</p>
-                  <button onclick="window.open('/api/cards/print/teacher/${teacher.id}', '_blank')" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-xl font-bold hover:shadow-lg transition">🎫 طباعة بطاقة المعلم</button>
-                </div>
-              </div>
-              <div class="lg:col-span-2">
-                <div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
-                  <h5 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">👤 البيانات الشخصية</h5>
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                    <div><span class="text-slate-500">الاسم:</span><div class="font-bold mt-1">${teacher.name}</div></div>
-                    <div><span class="text-slate-500">المادة:</span><div class="font-bold mt-1">${teacher.subject || '-'}</div></div>
-                    <div><span class="text-slate-500">الهاتف:</span><div class="font-bold mt-1">${teacher.phone || '-'}</div></div>
-                    <div><span class="text-slate-500">البريد:</span><div class="font-bold mt-1">${teacher.email || '-'}</div></div>
-                    <div><span class="text-slate-500">الراتب:</span><div class="font-bold mt-1">${teacher.salary || 0} جنيه</div></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-3 mt-6">
-              <button onclick="window.print()" class="flex-1 bg-white hover:bg-slate-50 text-slate-700 py-3 rounded-xl font-bold transition border border-slate-200">🖨️ طباعة السجل</button>
-            </div>
-          </div>`;
+        contentDiv.innerHTML = '<div class="bg-gradient-to-br from-emerald-50 via-white to-teal-50 rounded-3xl shadow-2xl border-2 border-emerald-200 p-6 md:p-10">' +
+          '<div class="flex justify-between items-start mb-8 flex-wrap gap-3">' +
+          '<div><h3 class="text-3xl font-extrabold text-slate-800 mb-2">📋 السجل الكامل للمعلم</h3>' +
+          '<p class="text-sm text-slate-500">جميع المعلومات الشخصية والمهنية</p></div>' +
+          '<button onclick="renderTeacherRecords()" class="bg-white hover:bg-slate-50 text-slate-700 px-6 py-3 rounded-xl font-bold transition border border-slate-200 shadow-sm flex items-center gap-2">' +
+          '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg> رجوع</button></div>' +
+          '<div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 mb-6 text-white shadow-xl">' +
+          '<div class="flex items-center gap-6 flex-wrap">' +
+          '<div class="w-32 h-32 bg-white/20 rounded-2xl flex items-center justify-center text-6xl overflow-hidden border-4 border-white/30 shadow-lg flex-shrink-0">' +
+          (teacher.photo ? '<img src="' + teacher.photo + '" class="w-full h-full object-cover">' : '👨‍🏫') + '</div>' +
+          '<div class="flex-1 min-w-[200px]">' +
+          '<h4 class="text-3xl font-extrabold mb-4">' + teacher.name + '</h4>' +
+          '<div class="grid grid-cols-2 gap-3 text-sm">' +
+          '<div class="bg-white/10 backdrop-blur px-4 py-2 rounded-lg"><span class="opacity-80">المادة:</span> <span class="font-bold">' + (teacher.subject || 'غير محدد') + '</span></div>' +
+          '<div class="bg-white/10 backdrop-blur px-4 py-2 rounded-lg"><span class="opacity-80">الراتب:</span> <span class="font-bold">' + (teacher.salary || 0) + ' جنيه</span></div>' +
+          '</div></div></div></div>' +
+          '<div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 mb-6">' +
+          '<h5 class="text-xl font-bold text-slate-800 mb-5 flex items-center gap-2 pb-3 border-b-2 border-emerald-100">📞 معلومات الاتصال</h5>' +
+          '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">' +
+          '<div class="flex items-start gap-3"><div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">📱</div><div><div class="text-xs text-slate-500 font-semibold mb-1">رقم الهاتف</div><div class="font-bold text-slate-800 text-lg">' + (teacher.phone || 'غير محدد') + '</div></div></div>' +
+          '<div class="flex items-start gap-3"><div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">📧</div><div><div class="text-xs text-slate-500 font-semibold mb-1">البريد الإلكتروني</div><div class="font-bold text-slate-800 text-lg">' + (teacher.email || 'غير محدد') + '</div></div></div>' +
+          '</div></div>' +
+          '<div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 mb-6">' +
+          '<h5 class="text-xl font-bold text-slate-800 mb-5 flex items-center gap-2 pb-3 border-b-2 border-emerald-100">📊 المعلومات المهنية</h5>' +
+          '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">' +
+          '<div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-5 border border-emerald-100">' +
+          '<div class="text-3xl mb-2">📚</div>' +
+          '<div class="text-xs text-slate-500 font-semibold mb-1">المادة الدراسية</div>' +
+          '<div class="text-xl font-extrabold text-emerald-700">' + (teacher.subject || 'غير محدد') + '</div></div>' +
+          '<div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">' +
+          '<div class="text-3xl mb-2">💰</div>' +
+          '<div class="text-xs text-slate-500 font-semibold mb-1">الراتب الشهري</div>' +
+          '<div class="text-xl font-extrabold text-blue-700">' + (teacher.salary || 0) + ' جنيه</div></div>' +
+          '<div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border border-purple-100">' +
+          '<div class="text-3xl mb-2">👨‍🏫</div>' +
+          '<div class="text-xs text-slate-500 font-semibold mb-1">الوظيفة</div>' +
+          '<div class="text-xl font-extrabold text-purple-700">معلم</div></div>' +
+          '</div></div>' +
+          '<div class="flex flex-col sm:flex-row gap-3">' +
+          '<button onclick="window.open(\'/api/cards/print/teacher/' + teacher.id + '\', \'_blank\')" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold hover:shadow-xl transition flex items-center justify-center gap-2">🎫 طباعة بطاقة المعلم</button>' +
+          '<button onclick="window.print()" class="flex-1 bg-white hover:bg-slate-50 text-slate-700 py-4 rounded-xl font-bold transition border-2 border-slate-200 flex items-center justify-center gap-2">🖨️ طباعة السجل</button>' +
+          '</div></div>';
       } catch (err) { showToast('❌ خطأ في تحميل البيانات', 'error'); }
     }
 
     // ======== سجلات الموظفين ========
     async function renderEmployeeRecords() {
       const contentDiv = document.getElementById('main-content');
-      contentDiv.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8 mb-6">
-          <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">🔍 البحث في سجلات الموظفين</h3>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-2">نوع البحث</label>
-              <select id="employee-search-field" class="form-input mb-0">
-                <option value="name">الاسم</option>
-                <option value="role">الوظيفة</option>
-              </select>
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-sm font-semibold text-slate-700 mb-2">ابحث عن...</label>
-              <input type="text" id="employee-search-query" class="form-input mb-0" placeholder="اكتب اسم الموظف أو وظيفته" onkeypress="if(event.key==='Enter') searchEmployees()">
-            </div>
-            <div class="flex items-end">
-              <button onclick="searchEmployees()" class="btn-primary w-full py-3">🔍 بحث</button>
-            </div>
-          </div>
-        </div>
-        <div id="employee-results" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">
-          <div class="text-center py-16">
-            <div class="text-6xl mb-4">👔</div>
-            <div class="text-slate-400 font-semibold">استخدم البحث أعلاه لعرض سجلات الموظفين</div>
-          </div>
-        </div>`;
+      contentDiv.innerHTML = '<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8 mb-6">' +
+        '<h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">🔍 البحث في سجلات الموظفين</h3>' +
+        '<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">نوع البحث</label>' +
+        '<select id="employee-search-field" class="form-input mb-0">' +
+        '<option value="name">الاسم</option><option value="role">الوظيفة</option></select></div>' +
+        '<div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-700 mb-2">ابحث عن...</label>' +
+        '<input type="text" id="employee-search-query" class="form-input mb-0" placeholder="اكتب اسم الموظف أو وظيفته" onkeypress="if(event.key===\'Enter\') searchEmployees()"></div>' +
+        '<div class="flex items-end"><button onclick="searchEmployees()" class="btn-primary w-full py-3">🔍 بحث</button></div></div></div>' +
+        '<div id="employee-results" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">' +
+        '<div class="text-center py-16"><div class="text-6xl mb-4">👔</div><div class="text-slate-400 font-semibold">استخدم البحث أعلاه لعرض سجلات الموظفين</div></div></div>';
     }
 
     async function searchEmployees() {
@@ -616,132 +550,113 @@
       if (!query) { resultsDiv.innerHTML = '<div class="text-center py-12 text-red-500 font-semibold">❌ الرجاء إدخال كلمة البحث</div>'; return; }
       resultsDiv.innerHTML = '<div class="text-center py-12 text-slate-400">جاري البحث...</div>';
       try {
-        const res = await fetch(`/api/employees/search?query=${encodeURIComponent(query)}&field=${field}`);
+        const res = await fetch('/api/employees/search?query=' + encodeURIComponent(query) + '&field=' + field);
         const data = await res.json();
         if (!data.success || data.data.length === 0) {
           resultsDiv.innerHTML = '<div class="text-center py-16"><div class="text-6xl mb-4">🔍</div><div class="text-slate-400 font-semibold">لا توجد نتائج</div></div>';
           return;
         }
-        resultsDiv.innerHTML = `
-          <h3 class="text-lg font-bold text-slate-800 mb-4">📋 نتائج البحث (${data.count})</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            ${data.data.map(e => `
-              <div class="bg-gradient-to-br from-white to-slate-50 border-2 border-slate-200 rounded-2xl p-5 hover:shadow-xl hover:border-amber-300 transition-all cursor-pointer" onclick="viewEmployeeDetails(${e.id})">
-                <div class="flex items-center gap-4 mb-4">
-                  <div class="w-16 h-16 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center text-3xl overflow-hidden flex-shrink-0 border-2 border-white shadow-md">
-                    ${e.photo ? `<img src="${e.photo}" class="w-full h-full object-cover">` : '👔'}
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <h4 class="font-bold text-lg text-slate-800 truncate">${e.name}</h4>
-                    <p class="text-sm text-slate-500">${e.role || 'لا توجد وظيفة'}</p>
-                  </div>
-                </div>
-                <div class="space-y-2 text-sm border-t border-slate-100 pt-3">
-                  <div class="flex justify-between"><span class="text-slate-500">الهاتف:</span><span class="font-semibold">${e.phone || '-'}</span></div>
-                  <div class="flex justify-between"><span class="text-slate-500">الراتب:</span><span class="font-semibold">${e.salary || 0} ج</span></div>
-                </div>
-                <button onclick="event.stopPropagation(); viewEmployeeDetails(${e.id})" class="mt-4 w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-2.5 rounded-xl font-bold hover:shadow-lg transition">عرض السجل الكامل</button>
-              </div>
-            `).join('')}
-          </div>`;
+        resultsDiv.innerHTML = '<h3 class="text-lg font-bold text-slate-800 mb-4">📋 نتائج البحث (' + data.count + ')</h3>' +
+          '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">' +
+          data.data.map(function(e) {
+            return '<div class="bg-gradient-to-br from-white to-slate-50 border-2 border-slate-200 rounded-2xl p-5 hover:shadow-xl hover:border-amber-300 transition-all cursor-pointer" onclick="viewEmployeeDetails(' + e.id + ')">' +
+              '<div class="flex items-center gap-4 mb-4">' +
+              '<div class="w-16 h-16 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center text-3xl overflow-hidden flex-shrink-0 border-2 border-white shadow-md">' +
+              (e.photo ? '<img src="' + e.photo + '" class="w-full h-full object-cover">' : '👔') + '</div>' +
+              '<div class="flex-1 min-w-0"><h4 class="font-bold text-lg text-slate-800 truncate">' + e.name + '</h4>' +
+              '<p class="text-sm text-slate-500">' + (e.role || 'لا توجد وظيفة') + '</p></div></div>' +
+              '<div class="space-y-2 text-sm border-t border-slate-100 pt-3">' +
+              '<div class="flex justify-between"><span class="text-slate-500">الهاتف:</span><span class="font-semibold">' + (e.phone || '-') + '</span></div>' +
+              '<div class="flex justify-between"><span class="text-slate-500">الراتب:</span><span class="font-semibold">' + (e.salary || 0) + ' ج</span></div></div>' +
+              '<button onclick="event.stopPropagation(); viewEmployeeDetails(' + e.id + ')" class="mt-4 w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-2.5 rounded-xl font-bold hover:shadow-lg transition">عرض السجل الكامل</button></div>';
+          }).join('') + '</div>';
       } catch (err) { resultsDiv.innerHTML = '<div class="text-center py-12 text-red-500">❌ خطأ في الاتصال</div>'; }
     }
 
     async function viewEmployeeDetails(id) {
       try {
-        const res = await fetch(`/api/employees/${id}`);
+        const res = await fetch('/api/employees/' + id);
         const data = await res.json();
         if (!data.success) { showToast('❌ خطأ في تحميل البيانات', 'error'); return; }
         const employee = data.data;
         const contentDiv = document.getElementById('employee-results');
-        contentDiv.innerHTML = `
-          <div class="bg-gradient-to-br from-amber-50 via-white to-orange-50 rounded-2xl shadow-xl border-2 border-amber-100 p-6 md:p-8">
-            <div class="flex justify-between items-start mb-6 flex-wrap gap-3">
-              <h3 class="text-2xl font-extrabold text-slate-800">📋 السجل الكامل للموظف</h3>
-              <button onclick="renderEmployeeRecords()" class="bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-xl font-bold transition border border-slate-200 shadow-sm">← رجوع</button>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div class="lg:col-span-1">
-                <div class="bg-white rounded-2xl p-6 shadow-lg text-center border border-slate-100">
-                  <div class="w-32 h-32 mx-auto bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center text-6xl overflow-hidden mb-4 border-4 border-white shadow-xl">
-                    ${employee.photo ? `<img src="${employee.photo}" class="w-full h-full object-cover">` : '👔'}
-                  </div>
-                  <h4 class="text-xl font-extrabold text-slate-800 mb-2">${employee.name}</h4>
-                  <p class="text-sm text-slate-500 mb-4">${employee.role || 'لا توجد وظيفة'}</p>
-                  <button onclick="window.open('/api/cards/print/employee/${employee.id}', '_blank')" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-xl font-bold hover:shadow-lg transition">🎫 طباعة بطاقة الموظف</button>
-                </div>
-              </div>
-              <div class="lg:col-span-2">
-                <div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
-                  <h5 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">👤 البيانات الشخصية</h5>
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                    <div><span class="text-slate-500">الاسم:</span><div class="font-bold mt-1">${employee.name}</div></div>
-                    <div><span class="text-slate-500">الوظيفة:</span><div class="font-bold mt-1">${employee.role || '-'}</div></div>
-                    <div><span class="text-slate-500">الهاتف:</span><div class="font-bold mt-1">${employee.phone || '-'}</div></div>
-                    <div><span class="text-slate-500">البريد:</span><div class="font-bold mt-1">${employee.email || '-'}</div></div>
-                    <div><span class="text-slate-500">الراتب:</span><div class="font-bold mt-1">${employee.salary || 0} جنيه</div></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-3 mt-6">
-              <button onclick="window.print()" class="flex-1 bg-white hover:bg-slate-50 text-slate-700 py-3 rounded-xl font-bold transition border border-slate-200">🖨️ طباعة السجل</button>
-            </div>
-          </div>`;
+        contentDiv.innerHTML = '<div class="bg-gradient-to-br from-amber-50 via-white to-orange-50 rounded-3xl shadow-2xl border-2 border-amber-200 p-6 md:p-10">' +
+          '<div class="flex justify-between items-start mb-8 flex-wrap gap-3">' +
+          '<div><h3 class="text-3xl font-extrabold text-slate-800 mb-2">📋 السجل الكامل للموظف</h3>' +
+          '<p class="text-sm text-slate-500">جميع المعلومات الشخصية والمهنية</p></div>' +
+          '<button onclick="renderEmployeeRecords()" class="bg-white hover:bg-slate-50 text-slate-700 px-6 py-3 rounded-xl font-bold transition border border-slate-200 shadow-sm flex items-center gap-2">' +
+          '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg> رجوع</button></div>' +
+          '<div class="bg-gradient-to-r from-amber-600 to-orange-600 rounded-2xl p-8 mb-6 text-white shadow-xl">' +
+          '<div class="flex items-center gap-6 flex-wrap">' +
+          '<div class="w-32 h-32 bg-white/20 rounded-2xl flex items-center justify-center text-6xl overflow-hidden border-4 border-white/30 shadow-lg flex-shrink-0">' +
+          (employee.photo ? '<img src="' + employee.photo + '" class="w-full h-full object-cover">' : '👔') + '</div>' +
+          '<div class="flex-1 min-w-[200px]">' +
+          '<h4 class="text-3xl font-extrabold mb-4">' + employee.name + '</h4>' +
+          '<div class="grid grid-cols-2 gap-3 text-sm">' +
+          '<div class="bg-white/10 backdrop-blur px-4 py-2 rounded-lg"><span class="opacity-80">الوظيفة:</span> <span class="font-bold">' + (employee.role || 'غير محدد') + '</span></div>' +
+          '<div class="bg-white/10 backdrop-blur px-4 py-2 rounded-lg"><span class="opacity-80">الراتب:</span> <span class="font-bold">' + (employee.salary || 0) + ' جنيه</span></div>' +
+          '</div></div></div></div>' +
+          '<div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 mb-6">' +
+          '<h5 class="text-xl font-bold text-slate-800 mb-5 flex items-center gap-2 pb-3 border-b-2 border-amber-100">📞 معلومات الاتصال</h5>' +
+          '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">' +
+          '<div class="flex items-start gap-3"><div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">📱</div><div><div class="text-xs text-slate-500 font-semibold mb-1">رقم الهاتف</div><div class="font-bold text-slate-800 text-lg">' + (employee.phone || 'غير محدد') + '</div></div></div>' +
+          '<div class="flex items-start gap-3"><div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">📧</div><div><div class="text-xs text-slate-500 font-semibold mb-1">البريد الإلكتروني</div><div class="font-bold text-slate-800 text-lg">' + (employee.email || 'غير محدد') + '</div></div></div>' +
+          '</div></div>' +
+          '<div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 mb-6">' +
+          '<h5 class="text-xl font-bold text-slate-800 mb-5 flex items-center gap-2 pb-3 border-b-2 border-amber-100">📊 المعلومات المهنية</h5>' +
+          '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">' +
+          '<div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-5 border border-amber-100">' +
+          '<div class="text-3xl mb-2">💼</div>' +
+          '<div class="text-xs text-slate-500 font-semibold mb-1">الوظيفة</div>' +
+          '<div class="text-xl font-extrabold text-amber-700">' + (employee.role || 'غير محدد') + '</div></div>' +
+          '<div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">' +
+          '<div class="text-3xl mb-2">💰</div>' +
+          '<div class="text-xs text-slate-500 font-semibold mb-1">الراتب الشهري</div>' +
+          '<div class="text-xl font-extrabold text-blue-700">' + (employee.salary || 0) + ' جنيه</div></div>' +
+          '<div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border border-purple-100">' +
+          '<div class="text-3xl mb-2">👔</div>' +
+          '<div class="text-xs text-slate-500 font-semibold mb-1">الحالة</div>' +
+          '<div class="text-xl font-extrabold text-purple-700">موظف</div></div>' +
+          '</div></div>' +
+          '<div class="flex flex-col sm:flex-row gap-3">' +
+          '<button onclick="window.open(\'/api/cards/print/employee/' + employee.id + '\', \'_blank\')" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold hover:shadow-xl transition flex items-center justify-center gap-2">🎫 طباعة بطاقة الموظف</button>' +
+          '<button onclick="window.print()" class="flex-1 bg-white hover:bg-slate-50 text-slate-700 py-4 rounded-xl font-bold transition border-2 border-slate-200 flex items-center justify-center gap-2">🖨️ طباعة السجل</button>' +
+          '</div></div>';
       } catch (err) { showToast('❌ خطأ في تحميل البيانات', 'error'); }
     }
 
     // ======== البطاقات ========
     async function renderCards() {
       const contentDiv = document.getElementById('main-content');
-      contentDiv.innerHTML = `
-        <div class="bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 rounded-2xl shadow-sm border border-purple-100 p-4 md:p-8 mb-6">
-          <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">🎫 إنشاء بطاقة احترافية</h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-2">نوع البطاقة</label>
-              <select id="card-type" class="form-input mb-0" onchange="loadCardPersons()">
-                <option value="student">👨‍🎓 طالب</option>
-                <option value="teacher">👨‍🏫 معلم</option>
-                <option value="employee">👔 موظف</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-2">البحث السريع</label>
-              <input type="text" id="card-search" class="form-input mb-0" placeholder="اكتب الاسم أو الرقم..." oninput="filterCardPersons()">
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-2">اختر الشخص</label>
-              <select id="card-person" class="form-input mb-0">
-                <option value="">جاري التحميل...</option>
-              </select>
-            </div>
-          </div>
-          <button onclick="generateCard()" class="btn-primary w-full py-3 text-base">🎫 إنشاء وطباعة البطاقة</button>
-        </div>
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">
-          <h3 class="text-lg font-bold text-slate-800 mb-6">📋 البطاقات السريعة</h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-gradient-to-br from-indigo-500 to-blue-600 text-white p-6 rounded-2xl shadow-lg">
-              <div class="text-4xl mb-3">👨‍🎓</div>
-              <h4 class="text-xl font-bold mb-2">بطاقات الطلاب</h4>
-              <p class="text-sm opacity-90 mb-4">إنشاء بطاقات لجميع الطلاب</p>
-              <button onclick="showPage('student-records')" class="bg-white/20 hover:bg-white/30 backdrop-blur px-4 py-2 rounded-lg text-sm font-bold transition">البحث عن طالب</button>
-            </div>
-            <div class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-6 rounded-2xl shadow-lg">
-              <div class="text-4xl mb-3">👨‍🏫</div>
-              <h4 class="text-xl font-bold mb-2">بطاقات المعلمين</h4>
-              <p class="text-sm opacity-90 mb-4">إنشاء بطاقات للمعلمين</p>
-              <button onclick="showPage('teacher-records')" class="bg-white/20 hover:bg-white/30 backdrop-blur px-4 py-2 rounded-lg text-sm font-bold transition">البحث عن معلم</button>
-            </div>
-            <div class="bg-gradient-to-br from-amber-500 to-orange-600 text-white p-6 rounded-2xl shadow-lg">
-              <div class="text-4xl mb-3">👔</div>
-              <h4 class="text-xl font-bold mb-2">بطاقات الموظفين</h4>
-              <p class="text-sm opacity-90 mb-4">إنشاء بطاقات للموظفين</p>
-              <button onclick="showPage('employee-records')" class="bg-white/20 hover:bg-white/30 backdrop-blur px-4 py-2 rounded-lg text-sm font-bold transition">البحث عن موظف</button>
-            </div>
-          </div>
-        </div>`;
+      contentDiv.innerHTML = '<div class="bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 rounded-2xl shadow-sm border border-purple-100 p-4 md:p-8 mb-6">' +
+        '<h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">🎫 إنشاء بطاقة احترافية</h3>' +
+        '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">نوع البطاقة</label>' +
+        '<select id="card-type" class="form-input mb-0" onchange="loadCardPersons()">' +
+        '<option value="student">👨‍🎓 طالب</option>' +
+        '<option value="teacher">👨‍🏫 معلم</option>' +
+        '<option value="employee">👔 موظف</option></select></div>' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">البحث السريع</label>' +
+        '<input type="text" id="card-search" class="form-input mb-0" placeholder="اكتب الاسم أو الرقم..." oninput="filterCardPersons()"></div>' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">اختر الشخص</label>' +
+        '<select id="card-person" class="form-input mb-0"><option value="">جاري التحميل...</option></select></div></div>' +
+        '<button onclick="generateCard()" class="btn-primary w-full py-3 text-base">🎫 إنشاء وطباعة البطاقة</button></div>' +
+        '<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">' +
+        '<h3 class="text-lg font-bold text-slate-800 mb-6">📋 البطاقات السريعة</h3>' +
+        '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">' +
+        '<div class="bg-gradient-to-br from-indigo-500 to-blue-600 text-white p-6 rounded-2xl shadow-lg">' +
+        '<div class="text-4xl mb-3">👨‍🎓</div><h4 class="text-xl font-bold mb-2">بطاقات الطلاب</h4>' +
+        '<p class="text-sm opacity-90 mb-4">إنشاء بطاقات لجميع الطلاب</p>' +
+        '<button onclick="showPage(\'student-records\')" class="bg-white/20 hover:bg-white/30 backdrop-blur px-4 py-2 rounded-lg text-sm font-bold transition">البحث عن طالب</button></div>' +
+        '<div class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-6 rounded-2xl shadow-lg">' +
+        '<div class="text-4xl mb-3">👨‍🏫</div><h4 class="text-xl font-bold mb-2">بطاقات المعلمين</h4>' +
+        '<p class="text-sm opacity-90 mb-4">إنشاء بطاقات للمعلمين</p>' +
+        '<button onclick="showPage(\'teacher-records\')" class="bg-white/20 hover:bg-white/30 backdrop-blur px-4 py-2 rounded-lg text-sm font-bold transition">البحث عن معلم</button></div>' +
+        '<div class="bg-gradient-to-br from-amber-500 to-orange-600 text-white p-6 rounded-2xl shadow-lg">' +
+        '<div class="text-4xl mb-3">👔</div><h4 class="text-xl font-bold mb-2">بطاقات الموظفين</h4>' +
+        '<p class="text-sm opacity-90 mb-4">إنشاء بطاقات للموظفين</p>' +
+        '<button onclick="showPage(\'employee-records\')" class="bg-white/20 hover:bg-white/30 backdrop-blur px-4 py-2 rounded-lg text-sm font-bold transition">البحث عن موظف</button></div>' +
+        '</div></div>';
       await loadCardPersons();
     }
 
@@ -750,13 +665,13 @@
       const select = document.getElementById('card-person');
       select.innerHTML = '<option value="">جاري التحميل...</option>';
       try {
-        const res = await fetch(`/api/${type}s`);
+        const res = await fetch('/api/' + type + 's');
         const data = await res.json();
         if (data.success && data.data) {
           select.innerHTML = '<option value="">اختر الشخص</option>';
-          data.data.forEach(p => {
-            const displayText = type === 'student' ? `${p.name} (${p.student_number || p.grade || '-'})` : p.name;
-            select.innerHTML += `<option value="${p.id}" data-name="${p.name}">${displayText}</option>`;
+          data.data.forEach(function(p) {
+            const displayText = type === 'student' ? (p.name + ' (' + (p.student_number || p.grade || '-') + ')') : p.name;
+            select.innerHTML += '<option value="' + p.id + '" data-name="' + p.name + '">' + displayText + '</option>';
           });
         }
       } catch (err) { console.error('خطأ:', err); }
@@ -765,7 +680,7 @@
     function filterCardPersons() {
       const query = document.getElementById('card-search').value.toLowerCase();
       const select = document.getElementById('card-person');
-      Array.from(select.options).forEach(option => {
+      Array.from(select.options).forEach(function(option) {
         if (option.value === '') return;
         const name = (option.getAttribute('data-name') || '').toLowerCase();
         option.hidden = !(name.includes(query) || option.value.includes(query));
@@ -776,61 +691,45 @@
       const type = document.getElementById('card-type').value;
       const personId = document.getElementById('card-person').value;
       if (!personId) { showToast('❌ الرجاء اختيار الشخص', 'error'); return; }
-      window.open(`/api/cards/print/${type}/${personId}`, '_blank');
+      window.open('/api/cards/print/' + type + '/' + personId, '_blank');
     }
 
     // ======== إدارة الحصص ========
     async function renderManageSchedules() {
       const contentDiv = document.getElementById('main-content');
-      contentDiv.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8 mb-6">
-          <h3 class="text-lg font-bold text-slate-800 mb-6">➕ إضافة حصة جديدة</h3>
-          <form id="schedule-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div><label class="block text-sm font-semibold text-slate-700 mb-2">اليوم *</label>
-              <select id="sched-day" class="form-input mb-0" required>
-                <option value="">اختر اليوم</option>
-                <option value="الأحد">الأحد</option><option value="الاثنين">الاثنين</option><option value="الثلاثاء">الثلاثاء</option><option value="الأربعاء">الأربعاء</option><option value="الخميس">الخميس</option>
-              </select></div>
-            <div><label class="block text-sm font-semibold text-slate-700 mb-2">رقم الحصة *</label>
-              <select id="sched-period" class="form-input mb-0" required>
-                <option value="">اختر الحصة</option>
-                <option value="1">الحصة 1</option><option value="2">الحصة 2</option><option value="3">الحصة 3</option><option value="4">الحصة 4</option><option value="5">الحصة 5</option><option value="6">الحصة 6</option><option value="7">الحصة 7</option>
-              </select></div>
-            <div><label class="block text-sm font-semibold text-slate-700 mb-2">الفصل *</label><select id="sched-section" class="form-input mb-0" required><option value="">جاري التحميل...</option></select></div>
-            <div><label class="block text-sm font-semibold text-slate-700 mb-2">المعلم *</label><select id="sched-teacher" class="form-input mb-0" required><option value="">جاري التحميل...</option></select></div>
-            <div><label class="block text-sm font-semibold text-slate-700 mb-2">المادة *</label><select id="sched-subject" class="form-input mb-0" required><option value="">جاري التحميل...</option></select></div>
-            <div><label class="block text-sm font-semibold text-slate-700 mb-2">القاعة *</label><input type="text" id="sched-room" class="form-input mb-0" placeholder="مثال: القاعة 101" required></div>
-            <div class="md:col-span-2 lg:col-span-3 flex justify-end gap-3 mt-4">
-              <button type="button" onclick="resetScheduleForm()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold transition">🔄 إعادة تعيين</button>
-              <button type="submit" class="btn-success flex items-center gap-2 px-8 py-3">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                حفظ الحصة
-              </button>
-            </div>
-          </form>
-        </div>
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">
-          <div class="flex justify-between items-center mb-6">
-            <h3 class="text-lg font-bold text-slate-800">📋 الحصص المضافة</h3>
-            <button onclick="loadManageSchedulesList()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold transition">🔄 تحديث</button>
-          </div>
-          <div class="overflow-x-auto -mx-4 md:mx-0">
-            <table class="w-full text-sm min-w-[800px]">
-              <thead class="bg-slate-50 border-b border-slate-100"><tr>
-                <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">اليوم</th>
-                <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الحصة</th>
-                <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">المادة</th>
-                <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">المعلم</th>
-                <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الفصل</th>
-                <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">القاعة</th>
-                <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الإجراءات</th>
-              </tr></thead>
-              <tbody id="manage-schedules-body" class="divide-y divide-slate-100">
-                <tr><td colspan="7" class="text-center py-12 text-slate-400">جاري التحميل...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>`;
+      contentDiv.innerHTML = '<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8 mb-6">' +
+        '<h3 class="text-lg font-bold text-slate-800 mb-6">➕ إضافة حصة جديدة</h3>' +
+        '<form id="schedule-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">اليوم *</label>' +
+        '<select id="sched-day" class="form-input mb-0" required>' +
+        '<option value="">اختر اليوم</option>' +
+        '<option value="الأحد">الأحد</option><option value="الاثنين">الاثنين</option><option value="الثلاثاء">الثلاثاء</option><option value="الأربعاء">الأربعاء</option><option value="الخميس">الخميس</option></select></div>' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">رقم الحصة *</label>' +
+        '<select id="sched-period" class="form-input mb-0" required>' +
+        '<option value="">اختر الحصة</option>' +
+        '<option value="1">الحصة 1</option><option value="2">الحصة 2</option><option value="3">الحصة 3</option><option value="4">الحصة 4</option><option value="5">الحصة 5</option><option value="6">الحصة 6</option><option value="7">الحصة 7</option></select></div>' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">الفصل *</label><select id="sched-section" class="form-input mb-0" required><option value="">جاري التحميل...</option></select></div>' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">المعلم *</label><select id="sched-teacher" class="form-input mb-0" required><option value="">جاري التحميل...</option></select></div>' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">المادة *</label><select id="sched-subject" class="form-input mb-0" required><option value="">جاري التحميل...</option></select></div>' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">القاعة *</label><input type="text" id="sched-room" class="form-input mb-0" placeholder="مثال: القاعة 101" required></div>' +
+        '<div class="md:col-span-2 lg:col-span-3 flex justify-end gap-3 mt-4">' +
+        '<button type="button" onclick="resetScheduleForm()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold transition">🔄 إعادة تعيين</button>' +
+        '<button type="submit" class="btn-success flex items-center gap-2 px-8 py-3">✅ حفظ الحصة</button></div></form></div>' +
+        '<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">' +
+        '<div class="flex justify-between items-center mb-6">' +
+        '<h3 class="text-lg font-bold text-slate-800">📋 الحصص المضافة</h3>' +
+        '<button onclick="loadManageSchedulesList()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold transition">🔄 تحديث</button></div>' +
+        '<div class="overflow-x-auto -mx-4 md:mx-0"><table class="w-full text-sm min-w-[800px]">' +
+        '<thead class="bg-slate-50 border-b border-slate-100"><tr>' +
+        '<th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">اليوم</th>' +
+        '<th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الحصة</th>' +
+        '<th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">المادة</th>' +
+        '<th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">المعلم</th>' +
+        '<th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الفصل</th>' +
+        '<th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">القاعة</th>' +
+        '<th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الإجراءات</th></tr></thead>' +
+        '<tbody id="manage-schedules-body" class="divide-y divide-slate-100">' +
+        '<tr><td colspan="7" class="text-center py-12 text-slate-400">جاري التحميل...</td></tr></tbody></table></div></div>';
       await loadScheduleOptions();
       loadManageSchedulesList();
       document.getElementById('schedule-form').addEventListener('submit', handleScheduleSubmit);
@@ -843,7 +742,7 @@
         const sectionSelect = document.getElementById('sched-section');
         if (sectionsData.success && sectionsData.data.length > 0) {
           sectionSelect.innerHTML = '<option value="">اختر الفصل</option>';
-          sectionsData.data.forEach(s => { sectionSelect.innerHTML += `<option value="${s}">${s}</option>`; });
+          sectionsData.data.forEach(function(s) { sectionSelect.innerHTML += '<option value="' + s + '">' + s + '</option>'; });
         } else sectionSelect.innerHTML = '<option value="">لا توجد فصول</option>';
         
         const teachersRes = await fetch('/api/teachers-list');
@@ -851,7 +750,7 @@
         const teacherSelect = document.getElementById('sched-teacher');
         if (teachersData.success && teachersData.data.length > 0) {
           teacherSelect.innerHTML = '<option value="">اختر المعلم</option>';
-          teachersData.data.forEach(t => { teacherSelect.innerHTML += `<option value="${t.name}" data-subject="${t.subject}">${t.name} (${t.subject})</option>`; });
+          teachersData.data.forEach(function(t) { teacherSelect.innerHTML += '<option value="' + t.name + '" data-subject="' + t.subject + '">' + t.name + ' (' + t.subject + ')</option>'; });
         } else teacherSelect.innerHTML = '<option value="">لا يوجد معلمون</option>';
         
         const subjectsRes = await fetch('/api/subjects-list');
@@ -859,7 +758,7 @@
         const subjectSelect = document.getElementById('sched-subject');
         if (subjectsData.success && subjectsData.data.length > 0) {
           subjectSelect.innerHTML = '<option value="">اختر المادة</option>';
-          subjectsData.data.forEach(s => { subjectSelect.innerHTML += `<option value="${s.name}">${s.name}</option>`; });
+          subjectsData.data.forEach(function(s) { subjectSelect.innerHTML += '<option value="' + s.name + '">' + s.name + '</option>'; });
         } else subjectSelect.innerHTML = '<option value="">لا توجد مواد</option>';
         
         teacherSelect.addEventListener('change', function() {
@@ -894,7 +793,7 @@
 
     function resetScheduleForm() {
       document.getElementById('schedule-form').reset();
-      ['sched-day','sched-period','sched-section','sched-teacher','sched-subject'].forEach(id => { document.getElementById(id).selectedIndex = 0; });
+      ['sched-day','sched-period','sched-section','sched-teacher','sched-subject'].forEach(function(id) { document.getElementById(id).selectedIndex = 0; });
       document.getElementById('sched-room').value = '';
     }
 
@@ -909,31 +808,29 @@
           return;
         }
         const daysOrder = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
-        const sorted = data.data.sort((a, b) => {
+        const sorted = data.data.sort(function(a, b) {
           const dayDiff = daysOrder.indexOf(a.day) - daysOrder.indexOf(b.day);
           if (dayDiff !== 0) return dayDiff;
           return a.period - b.period;
         });
-        tbody.innerHTML = sorted.map(row => `
-          <tr class="hover:bg-slate-50/80 transition-colors">
-            <td class="px-4 md:px-6 py-4 font-semibold text-slate-800">${row.day}</td>
-            <td class="px-4 md:px-6 py-4 text-slate-700">الحصة ${row.period}</td>
-            <td class="px-4 md:px-6 py-4 text-indigo-700 font-semibold">${row.subject}</td>
-            <td class="px-4 md:px-6 py-4 text-slate-700">${row.teacher}</td>
-            <td class="px-4 md:px-6 py-4 text-slate-700">${row.section}</td>
-            <td class="px-4 md:px-6 py-4 text-slate-700">${row.room}</td>
-            <td class="px-4 md:px-6 py-4 whitespace-nowrap">
-              <button onclick="deleteScheduleItem(${row.id}, '${row.subject}')" class="btn-action btn-delete" title="حذف">🗑️</button>
-            </td>
-          </tr>
-        `).join('');
+        tbody.innerHTML = sorted.map(function(row) {
+          return '<tr class="hover:bg-slate-50/80 transition-colors">' +
+            '<td class="px-4 md:px-6 py-4 font-semibold text-slate-800">' + row.day + '</td>' +
+            '<td class="px-4 md:px-6 py-4 text-slate-700">الحصة ' + row.period + '</td>' +
+            '<td class="px-4 md:px-6 py-4 text-indigo-700 font-semibold">' + row.subject + '</td>' +
+            '<td class="px-4 md:px-6 py-4 text-slate-700">' + row.teacher + '</td>' +
+            '<td class="px-4 md:px-6 py-4 text-slate-700">' + row.section + '</td>' +
+            '<td class="px-4 md:px-6 py-4 text-slate-700">' + row.room + '</td>' +
+            '<td class="px-4 md:px-6 py-4 whitespace-nowrap">' +
+            '<button onclick="deleteScheduleItem(' + row.id + ', \'' + row.subject + '\')" class="btn-action btn-delete" title="حذف">🗑️</button></td></tr>';
+        }).join('');
       } catch (err) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-12 text-red-500">❌ خطأ في الاتصال</td></tr>'; }
     }
 
     async function deleteScheduleItem(id, subject) {
-      if (!confirm(`هل أنت متأكد من حذف حصة "${subject}"؟`)) return;
+      if (!confirm('هل أنت متأكد من حذف حصة "' + subject + '"؟')) return;
       try {
-        const res = await fetch(`/api/schedules/${id}`, { method: 'DELETE' });
+        const res = await fetch('/api/schedules/' + id, { method: 'DELETE' });
         const result = await res.json();
         if (result.success) { showToast('🗑️ تم الحذف بنجاح'); loadManageSchedulesList(); }
         else showToast('❌ ' + result.message, 'error');
@@ -943,74 +840,56 @@
     // ======== التقارير ========
     function renderReports() {
       const contentDiv = document.getElementById('main-content');
-      contentDiv.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8 mb-6">
-          <h3 class="text-lg font-bold text-slate-800 mb-6">📄 إنشاء تقرير مخصص</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div><label class="block text-sm font-semibold text-slate-700 mb-2">نوع التقرير</label>
-              <select id="report-type" class="form-input mb-0">
-                <option value="attendance">📅 تقرير الحضور</option>
-                <option value="fees">💰 تقرير الرسوم</option>
-                <option value="students">👥 تقرير الطلاب</option>
-                <option value="teachers">👨‍🏫 تقرير المعلمين</option>
-              </select></div>
-            <div><label class="block text-sm font-semibold text-slate-700 mb-2">من تاريخ</label><input type="date" id="report-from" class="form-input mb-0"></div>
-            <div><label class="block text-sm font-semibold text-slate-700 mb-2">إلى تاريخ</label><input type="date" id="report-to" class="form-input mb-0"></div>
-            <div class="flex items-end"><button onclick="generateReport()" class="btn-primary w-full py-3">📄 إنشاء التقرير</button></div>
-          </div>
-        </div>
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">
-          <h3 class="text-lg font-bold text-slate-800 mb-4">📋 التقارير الجاهزة</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <a href="/api/reports/students" target="_blank" class="bg-gradient-to-br from-indigo-500 to-blue-600 text-white p-5 rounded-xl hover:shadow-lg transition flex items-center gap-3">
-              <span class="text-3xl">👥</span><div><h4 class="font-bold">تقرير الطلاب</h4><p class="text-xs opacity-90">عرض وطباعة</p></div>
-            </a>
-            <a href="/api/reports/teachers" target="_blank" class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-5 rounded-xl hover:shadow-lg transition flex items-center gap-3">
-              <span class="text-3xl">👨‍🏫</span><div><h4 class="font-bold">تقرير المعلمين</h4><p class="text-xs opacity-90">عرض وطباعة</p></div>
-            </a>
-            <a href="/api/reports/fees" target="_blank" class="bg-gradient-to-br from-amber-500 to-orange-600 text-white p-5 rounded-xl hover:shadow-lg transition flex items-center gap-3">
-              <span class="text-3xl">💰</span><div><h4 class="font-bold">التقرير المالي</h4><p class="text-xs opacity-90">عرض وطباعة</p></div>
-            </a>
-          </div>
-        </div>`;
+      contentDiv.innerHTML = '<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8 mb-6">' +
+        '<h3 class="text-lg font-bold text-slate-800 mb-6">📄 إنشاء تقرير مخصص</h3>' +
+        '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">نوع التقرير</label>' +
+        '<select id="report-type" class="form-input mb-0">' +
+        '<option value="attendance">📅 تقرير الحضور</option>' +
+        '<option value="fees">💰 تقرير الرسوم</option>' +
+        '<option value="students">👥 تقرير الطلاب</option>' +
+        '<option value="teachers">👨‍🏫 تقرير المعلمين</option></select></div>' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">من تاريخ</label><input type="date" id="report-from" class="form-input mb-0"></div>' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">إلى تاريخ</label><input type="date" id="report-to" class="form-input mb-0"></div>' +
+        '<div class="flex items-end"><button onclick="generateReport()" class="btn-primary w-full py-3">📄 إنشاء التقرير</button></div></div></div>' +
+        '<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">' +
+        '<h3 class="text-lg font-bold text-slate-800 mb-4">📋 التقارير الجاهزة</h3>' +
+        '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">' +
+        '<a href="/api/reports/students" target="_blank" class="bg-gradient-to-br from-indigo-500 to-blue-600 text-white p-5 rounded-xl hover:shadow-lg transition flex items-center gap-3">' +
+        '<span class="text-3xl">👥</span><div><h4 class="font-bold">تقرير الطلاب</h4><p class="text-xs opacity-90">عرض وطباعة</p></div></a>' +
+        '<a href="/api/reports/teachers" target="_blank" class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-5 rounded-xl hover:shadow-lg transition flex items-center gap-3">' +
+        '<span class="text-3xl">👨‍🏫</span><div><h4 class="font-bold">تقرير المعلمين</h4><p class="text-xs opacity-90">عرض وطباعة</p></div></a>' +
+        '<a href="/api/reports/fees" target="_blank" class="bg-gradient-to-br from-amber-500 to-orange-600 text-white p-5 rounded-xl hover:shadow-lg transition flex items-center gap-3">' +
+        '<span class="text-3xl">💰</span><div><h4 class="font-bold">التقرير المالي</h4><p class="text-xs opacity-90">عرض وطباعة</p></div></a></div></div>';
     }
 
     function generateReport() {
       const type = document.getElementById('report-type').value;
       const dateFrom = document.getElementById('report-from').value;
       const dateTo = document.getElementById('report-to').value;
-      let url = `/api/reports/advanced?type=${type}`;
-      if (dateFrom) url += `&date_from=${dateFrom}`;
-      if (dateTo) url += `&date_to=${dateTo}`;
+      let url = '/api/reports/advanced?type=' + type;
+      if (dateFrom) url += '&date_from=' + dateFrom;
+      if (dateTo) url += '&date_to=' + dateTo;
       window.open(url, '_blank');
     }
 
     // ======== جدول الحصص ========
     async function renderSchedules() {
       const contentDiv = document.getElementById('main-content');
-      contentDiv.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">
-          <h3 class="text-lg font-bold text-slate-800 mb-6">🕐 جدول الحصص</h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div><label class="block text-sm font-semibold text-slate-700 mb-2">الفصل</label>
-              <select id="schedule-section" class="form-input mb-0" onchange="loadSchedule()"><option value="">جاري التحميل...</option></select></div>
-            <div><label class="block text-sm font-semibold text-slate-700 mb-2">نوع العرض</label>
-              <select id="schedule-view" class="form-input mb-0" onchange="toggleScheduleView()">
-                <option value="weekly">📆 عرض أسبوعي</option><option value="daily">📅 عرض يومي</option>
-              </select></div>
-            <div id="daily-day-selector" style="display:none"><label class="block text-sm font-semibold text-slate-700 mb-2">اليوم</label>
-              <select id="schedule-day" class="form-input mb-0" onchange="loadSchedule()">
-                <option value="الأحد">الأحد</option><option value="الاثنين">الاثنين</option><option value="الثلاثاء">الثلاثاء</option><option value="الأربعاء">الأربعاء</option><option value="الخميس">الخميس</option>
-              </select></div>
-          </div>
-          <div class="flex justify-end mb-4">
-            <button onclick="printSchedule()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center gap-2">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-              طباعة الجدول
-            </button>
-          </div>
-          <div id="schedule-container" class="overflow-x-auto"><div class="text-center py-12 text-slate-400">جاري تحميل جدول الحصص...</div></div>
-        </div>`;
+      contentDiv.innerHTML = '<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">' +
+        '<h3 class="text-lg font-bold text-slate-800 mb-6">🕐 جدول الحصص</h3>' +
+        '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">الفصل</label>' +
+        '<select id="schedule-section" class="form-input mb-0" onchange="loadSchedule()"><option value="">جاري التحميل...</option></select></div>' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-2">نوع العرض</label>' +
+        '<select id="schedule-view" class="form-input mb-0" onchange="toggleScheduleView()">' +
+        '<option value="weekly">📆 عرض أسبوعي</option><option value="daily">📅 عرض يومي</option></select></div>' +
+        '<div id="daily-day-selector" style="display:none"><label class="block text-sm font-semibold text-slate-700 mb-2">اليوم</label>' +
+        '<select id="schedule-day" class="form-input mb-0" onchange="loadSchedule()">' +
+        '<option value="الأحد">الأحد</option><option value="الاثنين">الاثنين</option><option value="الثلاثاء">الثلاثاء</option><option value="الأربعاء">الأربعاء</option><option value="الخميس">الخميس</option></select></div></div>' +
+        '<div class="flex justify-end mb-4">' +
+        '<button onclick="printSchedule()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center gap-2">🖨️ طباعة الجدول</button></div>' +
+        '<div id="schedule-container" class="overflow-x-auto"><div class="text-center py-12 text-slate-400">جاري تحميل جدول الحصص...</div></div></div>';
       await loadSections();
       loadSchedule();
     }
@@ -1022,7 +901,7 @@
         const select = document.getElementById('schedule-section');
         if (data.success && data.data) {
           select.innerHTML = '<option value="all">جميع الفصول</option>';
-          data.data.forEach(section => {
+          data.data.forEach(function(section) {
             const option = document.createElement('option');
             option.value = section; option.textContent = section;
             select.appendChild(option);
@@ -1042,8 +921,8 @@
       const container = document.getElementById('schedule-container');
       container.innerHTML = '<div class="text-center py-12 text-slate-400">جاري التحميل...</div>';
       try {
-        let url = `/api/schedules/weekly?section=${encodeURIComponent(section)}&view=${view}`;
-        if (view === 'daily') url += `&day=${encodeURIComponent(document.getElementById('schedule-day').value)}`;
+        let url = '/api/schedules/weekly?section=' + encodeURIComponent(section) + '&view=' + view;
+        if (view === 'daily') url += '&day=' + encodeURIComponent(document.getElementById('schedule-day').value);
         const res = await fetch(url);
         const data = await res.json();
         if (!data.success) { container.innerHTML = '<div class="text-center py-12 text-red-500">❌ خطأ</div>'; return; }
@@ -1055,15 +934,15 @@
     function renderWeeklySchedule(data) {
       const container = document.getElementById('schedule-container');
       const sectionName = document.getElementById('schedule-section').value === 'all' ? 'جميع الفصول' : document.getElementById('schedule-section').value;
-      let html = `<h4 class="text-lg font-bold text-slate-800 mb-4">📆 الجدول الأسبوعي - ${sectionName}</h4>`;
+      let html = '<h4 class="text-lg font-bold text-slate-800 mb-4">📆 الجدول الأسبوعي - ' + sectionName + '</h4>';
       html += '<table class="w-full text-sm min-w-[800px] border-collapse"><thead><tr class="bg-slate-800 text-white"><th class="px-4 py-3 border border-slate-600">الحصة</th>';
-      data.days.forEach(day => { html += `<th class="px-4 py-3 border border-slate-600">${day}</th>`; });
+      data.days.forEach(function(day) { html += '<th class="px-4 py-3 border border-slate-600">' + day + '</th>'; });
       html += '</tr></thead><tbody>';
-      data.periods.forEach(period => {
-        html += `<tr class="${period % 2 === 0 ? 'bg-slate-50' : 'bg-white'}"><td class="px-4 py-3 border border-slate-200 font-bold text-slate-700 text-center">الحصة ${period}</td>`;
-        data.days.forEach(day => {
+      data.periods.forEach(function(period) {
+        html += '<tr class="' + (period % 2 === 0 ? 'bg-slate-50' : 'bg-white') + '"><td class="px-4 py-3 border border-slate-200 font-bold text-slate-700 text-center">الحصة ' + period + '</td>';
+        data.days.forEach(function(day) {
           const item = data.data[day][period];
-          if (item) html += `<td class="px-4 py-3 border border-slate-200 text-center"><div class="font-semibold text-indigo-700">${item.subject}</div><div class="text-xs text-slate-500 mt-1">${item.teacher}</div><div class="text-xs text-slate-400">${item.room}</div></td>`;
+          if (item) html += '<td class="px-4 py-3 border border-slate-200 text-center"><div class="font-semibold text-indigo-700">' + item.subject + '</div><div class="text-xs text-slate-500 mt-1">' + item.teacher + '</div><div class="text-xs text-slate-400">' + item.room + '</div></td>';
           else html += '<td class="px-4 py-3 border border-slate-200 text-center text-slate-300">-</td>';
         });
         html += '</tr>';
@@ -1075,11 +954,11 @@
     function renderDailySchedule(data) {
       const container = document.getElementById('schedule-container');
       const sectionName = document.getElementById('schedule-section').value === 'all' ? 'جميع الفصول' : document.getElementById('schedule-section').value;
-      let html = `<h4 class="text-lg font-bold text-slate-800 mb-4">📅 جدول يوم ${data.day} - ${sectionName}</h4>`;
+      let html = '<h4 class="text-lg font-bold text-slate-800 mb-4">📅 جدول يوم ' + data.day + ' - ' + sectionName + '</h4>';
       html += '<table class="w-full text-sm border-collapse"><thead><tr class="bg-slate-800 text-white"><th class="px-4 py-3 border border-slate-600">الحصة</th><th class="px-4 py-3 border border-slate-600">المادة</th><th class="px-4 py-3 border border-slate-600">المعلم</th><th class="px-4 py-3 border border-slate-600">القاعة</th></tr></thead><tbody>';
       if (data.data.length === 0) html += '<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">لا توجد حصص</td></tr>';
-      else data.data.forEach(item => {
-        html += `<tr class="hover:bg-slate-50"><td class="px-4 py-3 border border-slate-200 text-center font-bold">الحصة ${item.period}</td><td class="px-4 py-3 border border-slate-200 font-semibold text-indigo-700">${item.subject}</td><td class="px-4 py-3 border border-slate-200">${item.teacher}</td><td class="px-4 py-3 border border-slate-200">${item.room}</td></tr>`;
+      else data.data.forEach(function(item) {
+        html += '<tr class="hover:bg-slate-50"><td class="px-4 py-3 border border-slate-200 text-center font-bold">الحصة ' + item.period + '</td><td class="px-4 py-3 border border-slate-200 font-semibold text-indigo-700">' + item.subject + '</td><td class="px-4 py-3 border border-slate-200">' + item.teacher + '</td><td class="px-4 py-3 border border-slate-200">' + item.room + '</td></tr>';
       });
       html += '</tbody></table>';
       container.innerHTML = html;
@@ -1088,8 +967,8 @@
     function printSchedule() {
       const section = document.getElementById('schedule-section').value;
       const view = document.getElementById('schedule-view').value;
-      let url = `/api/reports/schedule-print?section=${encodeURIComponent(section)}&view=${view}`;
-      if (view === 'daily') url += `&day=${encodeURIComponent(document.getElementById('schedule-day').value)}`;
+      let url = '/api/reports/schedule-print?section=' + encodeURIComponent(section) + '&view=' + view;
+      if (view === 'daily') url += '&day=' + encodeURIComponent(document.getElementById('schedule-day').value);
       window.open(url, '_blank');
     }
 
@@ -1098,50 +977,36 @@
         const res = await fetch('/api/students');
         const data = await res.json();
         if (!data.success) { document.getElementById('main-content').innerHTML = '<div class="bg-red-50 border border-red-100 p-6 rounded-2xl text-red-600 font-semibold">⛔ ' + data.message + '</div>'; return; }
-        document.getElementById('main-content').innerHTML = `
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">
-            <h3 class="text-lg font-bold text-slate-800 mb-6">🎓 شهادات الطلاب</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              ${data.data.length ? data.data.map(s => `
-                <a href="/certificate/${s.id}" target="_blank" class="group bg-gradient-to-br from-slate-800 to-slate-900 text-white p-5 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                  <div class="flex items-center gap-4 mb-4">
-                    <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-2xl flex-shrink-0">🎓</div>
-                    <div class="overflow-hidden"><h4 class="font-bold text-base truncate">${s.name}</h4><p class="text-xs text-slate-300">${s.grade} - ${s.section}</p></div>
-                  </div>
-                  <div class="mt-4 bg-white text-slate-900 px-4 py-2.5 rounded-xl text-sm font-bold text-center group-hover:bg-indigo-50 transition-colors">عرض الشهادة</div>
-                </a>
-              `).join('') : '<p class="text-slate-400 col-span-3 text-center py-12">لا يوجد طلاب</p>'}
-            </div>
-          </div>`;
+        document.getElementById('main-content').innerHTML = '<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-8">' +
+          '<h3 class="text-lg font-bold text-slate-800 mb-6">🎓 شهادات الطلاب</h3>' +
+          '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">' +
+          (data.data.length ? data.data.map(function(s) {
+            return '<a href="/certificate/' + s.id + '" target="_blank" class="group bg-gradient-to-br from-slate-800 to-slate-900 text-white p-5 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1">' +
+              '<div class="flex items-center gap-4 mb-4">' +
+              '<div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-2xl flex-shrink-0">🎓</div>' +
+              '<div class="overflow-hidden"><h4 class="font-bold text-base truncate">' + s.name + '</h4><p class="text-xs text-slate-300">' + s.grade + ' - ' + s.section + '</p></div></div>' +
+              '<div class="mt-4 bg-white text-slate-900 px-4 py-2.5 rounded-xl text-sm font-bold text-center group-hover:bg-indigo-50 transition-colors">عرض الشهادة</div></a>';
+          }).join('') : '<p class="text-slate-400 col-span-3 text-center py-12">لا يوجد طلاب</p>') +
+          '</div></div>';
       } catch(e) { document.getElementById('main-content').innerHTML = '<div class="bg-red-50 border border-red-100 p-6 rounded-2xl text-red-600 font-semibold">❌ خطأ</div>'; }
     }
 
     async function renderUsers() {
       const contentDiv = document.getElementById('main-content');
-      contentDiv.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-6">
-          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-            <h3 class="text-lg font-bold text-slate-800">👥 إدارة المستخدمين</h3>
-            <button onclick="openUserModal()" class="btn-primary flex items-center justify-center gap-2 text-sm w-full sm:w-auto">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg> إضافة مستخدم جديد
-            </button>
-          </div>
-          <div class="overflow-x-auto -mx-4 md:mx-0">
-            <table class="w-full text-sm min-w-[800px]">
-              <thead class="bg-slate-50 border-b border-slate-100"><tr>
-                <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الاسم</th>
-                <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">البريد</th>
-                <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الدور</th>
-                <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الهاتف</th>
-                <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الحالة</th>
-                <th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الإجراءات</th>
-              </tr></thead>
-              <tbody id="users-table-body" class="divide-y divide-slate-100">
-                <tr><td colspan="6" class="text-center py-12 text-slate-400">جاري التحميل...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>`;
+      contentDiv.innerHTML = '<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-6">' +
+        '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">' +
+        '<h3 class="text-lg font-bold text-slate-800">👥 إدارة المستخدمين</h3>' +
+        '<button onclick="openUserModal()" class="btn-primary flex items-center justify-center gap-2 text-sm w-full sm:w-auto">➕ إضافة مستخدم جديد</button></div>' +
+        '<div class="overflow-x-auto -mx-4 md:mx-0"><table class="w-full text-sm min-w-[800px]">' +
+        '<thead class="bg-slate-50 border-b border-slate-100"><tr>' +
+        '<th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الاسم</th>' +
+        '<th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">البريد</th>' +
+        '<th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الدور</th>' +
+        '<th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الهاتف</th>' +
+        '<th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الحالة</th>' +
+        '<th class="px-4 md:px-6 py-3 text-right font-semibold text-slate-600">الإجراءات</th></tr></thead>' +
+        '<tbody id="users-table-body" class="divide-y divide-slate-100">' +
+        '<tr><td colspan="6" class="text-center py-12 text-slate-400">جاري التحميل...</td></tr></tbody></table></div></div>';
       loadUsers();
     }
 
@@ -1150,35 +1015,33 @@
         const res = await fetch('/api/users');
         const data = await res.json();
         const tbody = document.getElementById('users-table-body');
-        if (!data.success || !data.data || data.data.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="text-center py-12 text-slate-400">لا يوجد مستخدمين</td></tr>`; return; }
-        tbody.innerHTML = data.data.map(user => {
+        if (!data.success || !data.data || data.data.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center py-12 text-slate-400">لا يوجد مستخدمين</td></tr>'; return; }
+        tbody.innerHTML = data.data.map(function(user) {
           const roleColors = { 'مدير': 'bg-purple-100 text-purple-700', 'تسجيل الطلاب': 'bg-blue-100 text-blue-700', 'التقارير': 'bg-green-100 text-green-700', 'الشؤون المالية': 'bg-amber-100 text-amber-700', 'مخصص': 'bg-slate-100 text-slate-700' };
           const roleColor = roleColors[user.role] || 'bg-slate-100 text-slate-700';
           const statusBadge = user.status === 'active' ? '<span class="status-badge status-active">نشط</span>' : '<span class="status-badge status-inactive">موقوف</span>';
-          return `
-            <tr class="hover:bg-slate-50/80 transition-colors">
-              <td class="px-4 md:px-6 py-4 font-semibold text-slate-800">${user.name}</td>
-              <td class="px-4 md:px-6 py-4 text-slate-600">${user.email}</td>
-              <td class="px-4 md:px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${roleColor}">${user.role}</span></td>
-              <td class="px-4 md:px-6 py-4 text-slate-600">${user.phone || '-'}</td>
-              <td class="px-4 md:px-6 py-4">${statusBadge}</td>
-              <td class="px-4 md:px-6 py-4 whitespace-nowrap">
-                <button onclick="openUserModal(${user.id})" class="btn-action btn-edit" title="تعديل">✏️</button>
-                ${user.id !== currentUser.id ? `<button onclick="deleteUser(${user.id}, '${user.name}')" class="btn-action btn-delete" title="حذف">🗑️</button>` : ''}
-              </td>
-            </tr>`;
+          return '<tr class="hover:bg-slate-50/80 transition-colors">' +
+            '<td class="px-4 md:px-6 py-4 font-semibold text-slate-800">' + user.name + '</td>' +
+            '<td class="px-4 md:px-6 py-4 text-slate-600">' + user.email + '</td>' +
+            '<td class="px-4 md:px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold ' + roleColor + '">' + user.role + '</span></td>' +
+            '<td class="px-4 md:px-6 py-4 text-slate-600">' + (user.phone || '-') + '</td>' +
+            '<td class="px-4 md:px-6 py-4">' + statusBadge + '</td>' +
+            '<td class="px-4 md:px-6 py-4 whitespace-nowrap">' +
+            '<button onclick="openUserModal(' + user.id + ')" class="btn-action btn-edit" title="تعديل">✏️</button>' +
+            (user.id !== currentUser.id ? '<button onclick="deleteUser(' + user.id + ', \'' + user.name + '\')" class="btn-action btn-delete" title="حذف">🗑️</button>' : '') +
+            '</td></tr>';
         }).join('');
-      } catch (err) { document.getElementById('users-table-body').innerHTML = `<tr><td colspan="6" class="text-center py-12 text-red-500">❌ خطأ</td></tr>`; }
+      } catch (err) { document.getElementById('users-table-body').innerHTML = '<tr><td colspan="6" class="text-center py-12 text-red-500">❌ خطأ</td></tr>'; }
     }
 
-    function openUserModal(userId = null) {
-      currentEditId = userId;
+    function openUserModal(userId) {
+      currentEditId = userId || null;
       document.getElementById('modal-title').textContent = userId ? 'تعديل مستخدم' : 'إضافة مستخدم جديد';
       let user = { name: '', email: '', password: '', role: 'مخصص', phone: '', allowed_menus: [] };
       if (userId) {
-        fetch('/api/users').then(r => r.json()).then(data => {
+        fetch('/api/users').then(function(r) { return r.json(); }).then(function(data) {
           if (data.success) {
-            user = data.data.find(u => u.id === userId) || user;
+            user = data.data.find(function(u) { return u.id === userId; }) || user;
             let allowedMenus = user.allowed_menus || [];
             if (typeof allowedMenus === 'string') { try { allowedMenus = JSON.parse(allowedMenus); } catch (e) { allowedMenus = []; } }
             if (!Array.isArray(allowedMenus)) allowedMenus = [];
@@ -1191,30 +1054,24 @@
 
     function renderUserForm(user) {
       const roles = ['مدير', 'تسجيل الطلاب', 'التقارير', 'الشؤون المالية', 'مخصص'];
-      document.getElementById('modal-form').innerHTML = `
-        <div class="space-y-4">
-          <div><label class="block text-sm font-semibold text-slate-700 mb-1.5">الاسم *</label><input type="text" name="name" value="${user.name}" class="form-input" required></div>
-          <div><label class="block text-sm font-semibold text-slate-700 mb-1.5">البريد الإلكتروني *</label><input type="email" name="email" value="${user.email}" class="form-input" required></div>
-          <div><label class="block text-sm font-semibold text-slate-700 mb-1.5">${currentEditId ? 'كلمة مرور جديدة (اتركها فارغة)' : 'كلمة المرور *'}</label><input type="password" name="password" class="form-input" ${!currentEditId ? 'required' : ''}></div>
-          <div><label class="block text-sm font-semibold text-slate-700 mb-1.5">الهاتف</label><input type="text" name="phone" value="${user.phone || ''}" class="form-input"></div>
-          <div><label class="block text-sm font-semibold text-slate-700 mb-1.5">الدور *</label><select name="role" id="user-role-select" class="form-input" onchange="toggleCustomMenus()">${roles.map(r => `<option value="${r}" ${user.role === r ? 'selected' : ''}>${r}</option>`).join('')}</select></div>
-          <div id="custom-menus-section" style="display: ${user.role === 'مخصص' ? 'block' : 'none'}">
-            <label class="block text-sm font-semibold text-slate-700 mb-2">القوائم المسموح بها</label>
-            <div class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto border border-slate-200 rounded-lg p-3">
-              ${allMenus.filter(m => m.id !== 'users').map(m => `
-                <label class="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded">
-                  <input type="checkbox" name="allowed_menus" value="${m.id}" ${user.allowed_menus.includes(m.id) ? 'checked' : ''} class="rounded">
-                  <span class="text-sm">${m.icon} ${m.label}</span>
-                </label>
-              `).join('')}
-            </div>
-          </div>
-          ${currentEditId ? `<div><label class="block text-sm font-semibold text-slate-700 mb-1.5">الحالة</label><select name="status" class="form-input"><option value="active" ${user.status === 'active' ? 'selected' : ''}>نشط</option><option value="inactive" ${user.status === 'inactive' ? 'selected' : ''}>موقوف</option></select></div>` : ''}
-        </div>
-        <div class="flex flex-col sm:flex-row gap-3 mt-6">
-          <button type="submit" class="btn-primary py-3 text-base flex-1">💾 ${currentEditId ? 'تعديل' : 'إضافة'}</button>
-          <button type="button" onclick="closeModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-bold transition-colors">إلغاء</button>
-        </div>`;
+      document.getElementById('modal-form').innerHTML = '<div class="space-y-4">' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-1.5">الاسم *</label><input type="text" name="name" value="' + user.name + '" class="form-input" required></div>' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-1.5">البريد الإلكتروني *</label><input type="email" name="email" value="' + user.email + '" class="form-input" required></div>' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-1.5">' + (currentEditId ? 'كلمة مرور جديدة (اتركها فارغة)' : 'كلمة المرور *') + '</label><input type="password" name="password" class="form-input" ' + (!currentEditId ? 'required' : '') + '></div>' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-1.5">الهاتف</label><input type="text" name="phone" value="' + (user.phone || '') + '" class="form-input"></div>' +
+        '<div><label class="block text-sm font-semibold text-slate-700 mb-1.5">الدور *</label><select name="role" id="user-role-select" class="form-input" onchange="toggleCustomMenus()">' + roles.map(function(r) { return '<option value="' + r + '" ' + (user.role === r ? 'selected' : '') + '>' + r + '</option>'; }).join('') + '</select></div>' +
+        '<div id="custom-menus-section" style="display: ' + (user.role === 'مخصص' ? 'block' : 'none') + '">' +
+        '<label class="block text-sm font-semibold text-slate-700 mb-2">القوائم المسموح بها</label>' +
+        '<div class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto border border-slate-200 rounded-lg p-3">' +
+        allMenus.filter(function(m) { return m.id !== 'users'; }).map(function(m) {
+          return '<label class="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded">' +
+            '<input type="checkbox" name="allowed_menus" value="' + m.id + '" ' + (user.allowed_menus.includes(m.id) ? 'checked' : '') + ' class="rounded">' +
+            '<span class="text-sm">' + m.icon + ' ' + m.label + '</span></label>';
+        }).join('') + '</div></div>' +
+        (currentEditId ? '<div><label class="block text-sm font-semibold text-slate-700 mb-1.5">الحالة</label><select name="status" class="form-input"><option value="active" ' + (user.status === 'active' ? 'selected' : '') + '>نشط</option><option value="inactive" ' + (user.status === 'inactive' ? 'selected' : '') + '>موقوف</option></select></div>' : '') +
+        '</div><div class="flex flex-col sm:flex-row gap-3 mt-6">' +
+        '<button type="submit" class="btn-primary py-3 text-base flex-1">💾 ' + (currentEditId ? 'تعديل' : 'إضافة') + '</button>' +
+        '<button type="button" onclick="closeModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-bold transition-colors">إلغاء</button></div>';
       document.getElementById('modal').classList.add('show');
     }
 
@@ -1222,7 +1079,7 @@
       document.getElementById('custom-menus-section').style.display = document.getElementById('user-role-select').value === 'مخصص' ? 'block' : 'none';
     }
 
-    document.getElementById('modal-form').addEventListener('submit', async (e) => {
+    document.getElementById('modal-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       const formData = new FormData(e.target);
       const data = {
@@ -1231,11 +1088,11 @@
       };
       const password = formData.get('password');
       if (password) data.password = password;
-      data.allowed_menus = Array.from(document.querySelectorAll('input[name="allowed_menus"]:checked')).map(cb => cb.value);
+      data.allowed_menus = Array.from(document.querySelectorAll('input[name="allowed_menus"]:checked')).map(function(cb) { return cb.value; });
       const method = currentEditId ? 'PUT' : 'POST';
-      const url = currentEditId ? `/api/users/${currentEditId}` : '/api/users';
+      const url = currentEditId ? '/api/users/' + currentEditId : '/api/users';
       try {
-        const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
         const result = await res.json();
         if (result.success) {
           showToast(currentEditId ? '✅ تم التعديل' : '✅ تمت الإضافة');
@@ -1246,9 +1103,9 @@
     });
 
     async function deleteUser(id, name) {
-      if (!confirm(`هل أنت متأكد من حذف "${name}"؟`)) return;
+      if (!confirm('هل أنت متأكد من حذف "' + name + '"؟')) return;
       try {
-        const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+        const res = await fetch('/api/users/' + id, { method: 'DELETE' });
         const result = await res.json();
         if (result.success) { showToast('🗑️ تم الحذف'); loadUsers(); }
         else showToast('❌ ' + result.message, 'error');
@@ -1257,69 +1114,64 @@
 
     async function loadData(table) {
       try {
-        const res = await fetch(`/api/${table}`);
+        const res = await fetch('/api/' + table);
         const data = await res.json();
         const tbody = document.getElementById('dynamic-table-body');
         if (!tbody) return;
-        if (!data.success) { tbody.innerHTML = `<tr><td colspan="100" class="text-center py-12 text-red-500 font-semibold">⛔ ${data.message}</td></tr>`; return; }
+        if (!data.success) { tbody.innerHTML = '<tr><td colspan="100" class="text-center py-12 text-red-500 font-semibold">⛔ ' + data.message + '</td></tr>'; return; }
         const config = tableConfigs[currentTable];
-        if (!data.data || data.data.length === 0) { tbody.innerHTML = `<tr><td colspan="100" class="text-center py-12 text-slate-400">لا توجد بيانات</td></tr>`; return; }
-        tbody.innerHTML = data.data.map(row => `
-          <tr class="hover:bg-slate-50/80 transition-colors">
-            ${config.columns.map(c => {
+        if (!data.data || data.data.length === 0) { tbody.innerHTML = '<tr><td colspan="100" class="text-center py-12 text-slate-400">لا توجد بيانات</td></tr>'; return; }
+        tbody.innerHTML = data.data.map(function(row) {
+          return '<tr class="hover:bg-slate-50/80 transition-colors">' +
+            config.columns.map(function(c) {
               let val = row[c.key] || '-';
               if (c.key === 'status') {
-                if (val === 'نشط' || val === 'paid' || val === 'present') val = `<span class="status-badge status-active">${val === 'نشط' ? 'نشط' : (val === 'paid' ? 'مدفوع' : 'حاضر')}</span>`;
-                else if (val === 'متوقف' || val === 'unpaid' || val === 'absent') val = `<span class="status-badge status-inactive">${val === 'متوقف' ? 'متوقف' : (val === 'unpaid' ? 'غير مدفوع' : 'غائب')}</span>`;
+                if (val === 'نشط' || val === 'paid' || val === 'present') val = '<span class="status-badge status-active">' + (val === 'نشط' ? 'نشط' : (val === 'paid' ? 'مدفوع' : 'حاضر')) + '</span>';
+                else if (val === 'متوقف' || val === 'unpaid' || val === 'absent') val = '<span class="status-badge status-inactive">' + (val === 'متوقف' ? 'متوقف' : (val === 'unpaid' ? 'غير مدفوع' : 'غائب')) + '</span>';
               }
-              return `<td class="px-4 md:px-6 py-4 text-slate-700 font-medium whitespace-nowrap">${val}</td>`;
-            }).join('')}
-            <td class="px-4 md:px-6 py-4 whitespace-nowrap">
-              ${!config.noAdd ? `
-                <button onclick="editItem('${table}', ${row.id})" class="btn-action btn-edit" title="تعديل">✏️</button>
-                <button onclick="deleteItem('${table}', ${row.id}, '${(row.name || row.student_name || row.book_title || row.bus_name || row.source || row.category || 'هذا السجل').replace(/'/g, "\\'")}')" class="btn-action btn-delete" title="حذف">🗑️</button>
-              ` : '<span class="text-slate-400 text-xs">سجل نظام</span>'}
-            </td>
-          </tr>
-        `).join('');
+              return '<td class="px-4 md:px-6 py-4 text-slate-700 font-medium whitespace-nowrap">' + val + '</td>';
+            }).join('') +
+            '<td class="px-4 md:px-6 py-4 whitespace-nowrap">' +
+            (!config.noAdd ? '<button onclick="editItem(\'' + table + '\', ' + row.id + ')" class="btn-action btn-edit" title="تعديل">✏️</button>' +
+            '<button onclick="deleteItem(\'' + table + '\', ' + row.id + ', \'' + (row.name || row.student_name || row.book_title || row.bus_name || row.source || row.category || 'هذا السجل').replace(/'/g, "\\'") + '\')" class="btn-action btn-delete" title="حذف">🗑️</button>' : '<span class="text-slate-400 text-xs">سجل نظام</span>') +
+            '</td></tr>';
+        }).join('');
       } catch (err) {
         const tbody = document.getElementById('dynamic-table-body');
-        if (tbody) tbody.innerHTML = `<tr><td colspan="100" class="text-center py-12 text-red-500 font-semibold">❌ خطأ</td></tr>`;
+        if (tbody) tbody.innerHTML = '<tr><td colspan="100" class="text-center py-12 text-red-500 font-semibold">❌ خطأ</td></tr>';
       }
     }
 
-    async function openModal(editData = null) {
+    async function openModal(editData) {
       const config = tableConfigs[currentTable];
       currentPhotoUrl = editData ? (editData.photo || null) : null;
-      document.getElementById('modal-title').textContent = editData ? `تعديل: ${config.title}` : `إضافة: ${config.title}`;
+      document.getElementById('modal-title').textContent = editData ? 'تعديل: ' + config.title : 'إضافة: ' + config.title;
       currentEditId = editData ? editData.id : null;
       
       let formHtml = '';
       for (const f of config.form) {
         const val = editData ? (editData[f.name] || '') : '';
         if (f.type === 'select') {
-          formHtml += `<label class="block text-sm font-semibold text-slate-700 mb-1.5">${f.label}</label><select name="${f.name}" class="form-input">${f.options.map(o => `<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
+          formHtml += '<label class="block text-sm font-semibold text-slate-700 mb-1.5">' + f.label + '</label><select name="' + f.name + '" class="form-input">' + f.options.map(function(o) { return '<option value="' + o + '" ' + (val===o?'selected':'') + '>' + o + '</option>'; }).join('') + '</select>';
         } else if (f.type === 'file') {
-          formHtml += `<label class="block text-sm font-semibold text-slate-700 mb-1.5">${f.label}</label>
-            <div id="photo-preview-container" class="mb-2">
-              ${currentPhotoUrl ? `<img src="${currentPhotoUrl}" class="photo-preview" id="photo-preview">` : ''}
-            </div>
-            <div class="photo-upload-area" onclick="document.getElementById('photo-file-input').click()">
-              <div class="text-3xl mb-2">📷</div>
-              <div class="text-sm text-slate-600 font-semibold">اضغط لاختيار صورة</div>
-              <div class="text-xs text-slate-400 mt-1">JPG, PNG, GIF (حد أقصى 5MB)</div>
-            </div>
-            <input type="file" id="photo-file-input" accept="image/*" style="display:none" onchange="previewPhoto(this)">
-            <input type="hidden" name="${f.name}" id="photo-url-input" value="${currentPhotoUrl || ''}">`;
+          formHtml += '<label class="block text-sm font-semibold text-slate-700 mb-1.5">' + f.label + '</label>' +
+            '<div id="photo-preview-container" class="mb-2">' +
+            (currentPhotoUrl ? '<img src="' + currentPhotoUrl + '" class="photo-preview" id="photo-preview">' : '') +
+            '</div>' +
+            '<div class="photo-upload-area" onclick="document.getElementById(\'photo-file-input\').click()">' +
+            '<div class="text-3xl mb-2">📷</div>' +
+            '<div class="text-sm text-slate-600 font-semibold">اضغط لاختيار صورة</div>' +
+            '<div class="text-xs text-slate-400 mt-1">JPG, PNG, GIF (حد أقصى 5MB)</div></div>' +
+            '<input type="file" id="photo-file-input" accept="image/*" style="display:none" onchange="previewPhoto(this)">' +
+            '<input type="hidden" name="' + f.name + '" id="photo-url-input" value="' + (currentPhotoUrl || '') + '">';
         } else {
-          formHtml += `<label class="block text-sm font-semibold text-slate-700 mb-1.5">${f.label}</label><input type="${f.type}" name="${f.name}" value="${val}" class="form-input" placeholder="أدخل ${f.label}">`;
+          formHtml += '<label class="block text-sm font-semibold text-slate-700 mb-1.5">' + f.label + '</label><input type="' + f.type + '" name="' + f.name + '" value="' + val + '" class="form-input" placeholder="أدخل ' + f.label + '">';
         }
       }
       
-      formHtml += `<div class="flex flex-col sm:flex-row gap-3 mt-6">
-        <button type="submit" class="btn-primary py-3 text-base flex-1">💾 حفظ البيانات</button>
-        <button type="button" onclick="closeModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-bold transition-colors">إلغاء</button>
-      </div>`;
+      formHtml += '<div class="flex flex-col sm:flex-row gap-3 mt-6">' +
+        '<button type="submit" class="btn-primary py-3 text-base flex-1">💾 حفظ البيانات</button>' +
+        '<button type="button" onclick="closeModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-bold transition-colors">إلغاء</button></div>';
       
       document.getElementById('modal-form').innerHTML = formHtml;
       document.getElementById('modal').classList.add('show');
@@ -1336,51 +1188,30 @@
         const reader = new FileReader();
         reader.onload = function(e) {
           const container = document.getElementById('photo-preview-container');
-          container.innerHTML = `<img src="${e.target.result}" class="photo-preview" id="photo-preview">`;
+          container.innerHTML = '<img src="' + e.target.result + '" class="photo-preview" id="photo-preview">';
+          document.getElementById('photo-url-input').value = e.target.result;
         };
         reader.readAsDataURL(file);
       }
     }
 
-    // تعديل modal-form submit لرفع الصورة أولاً
-    document.getElementById('modal-form').removeEventListener('submit', handleModalSubmit);
-    document.getElementById('modal-form').addEventListener('submit', handleModalSubmit);
-
-    async function handleModalSubmit(e) {
+    document.getElementById('modal-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       const form = e.target;
       const formData = new FormData(form);
-      const fileInput = document.getElementById('photo-file-input');
-      
-      let photoUrl = document.getElementById('photo-url-input')?.value || '';
-      
-      // إذا تم اختيار صورة جديدة، ارفعها أولاً
-      if (fileInput && fileInput.files && fileInput.files[0]) {
-        showToast('📤 جاري رفع الصورة...', 'success');
-        const uploadedUrl = await uploadPhoto(fileInput.files[0]);
-        if (uploadedUrl) {
-          photoUrl = uploadedUrl;
-        } else {
-          return; // توقف إذا فشل الرفع
-        }
-      }
-      
       const data = {};
-      formData.forEach((v, k) => {
-        if (k !== 'photo' || !fileInput?.files?.[0]) {
-          data[k] = v;
-        }
+      formData.forEach(function(v, k) {
+        if (k !== 'photo') data[k] = v;
       });
-      
-      // تحديث حقل الصورة بالرابط الجديد
+      const photoUrl = document.getElementById('photo-url-input')?.value;
       if (photoUrl) data.photo = photoUrl;
       
       const actualTable = tableConfigs[currentTable]?.table || currentTable;
       const method = currentEditId ? 'PUT' : 'POST';
-      const url = currentEditId ? `/api/${actualTable}/${currentEditId}` : `/api/${actualTable}`;
+      const url = currentEditId ? '/api/' + actualTable + '/' + currentEditId : '/api/' + actualTable;
       
       try {
-        const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
         const result = await res.json();
         if (result.success) {
           showToast(currentEditId ? '✅ تم التعديل بنجاح' : '✅ تمت الإضافة بنجاح');
@@ -1388,14 +1219,14 @@
           loadData(actualTable);
         } else showToast('❌ ' + result.message, 'error');
       } catch (err) { showToast('❌ خطأ في الاتصال', 'error'); }
-    }
+    });
 
     async function editItem(table, id) {
       try {
         const actualTable = tableConfigs[table].table || table;
-        const res = await fetch(`/api/${actualTable}`);
+        const res = await fetch('/api/' + actualTable);
         const data = await res.json();
-        const item = data.data.find(r => r.id === id);
+        const item = data.data.find(function(r) { return r.id === id; });
         if (item) openModal(item);
       } catch(e) { showToast('❌ خطأ في تحميل البيانات', 'error'); }
     }
@@ -1403,21 +1234,21 @@
     function closeModal() { document.getElementById('modal').classList.remove('show'); currentPhotoUrl = null; }
 
     async function deleteItem(table, id, name) {
-      if (!confirm(`هل أنت متأكد من حذف "${name}"؟`)) return;
+      if (!confirm('هل أنت متأكد من حذف "' + name + '"؟')) return;
       const actualTable = tableConfigs[table].table || table;
       try {
-        const res = await fetch(`/api/${actualTable}/${id}`, { method: 'DELETE' });
+        const res = await fetch('/api/' + actualTable + '/' + id, { method: 'DELETE' });
         const result = await res.json();
         if (result.success) { showToast('🗑️ تم الحذف بنجاح'); loadData(actualTable); }
         else showToast('❌ ' + result.message, 'error');
       } catch (err) { showToast('❌ خطأ في الحذف', 'error'); }
     }
 
-    function showToast(msg, type = 'success') {
+    function showToast(msg, type) {
       const t = document.getElementById('toast');
       t.textContent = msg;
-      t.className = `toast show ${type === 'error' ? 'error' : ''}`;
-      setTimeout(() => t.classList.remove('show'), 3000);
+      t.className = 'toast show ' + (type === 'error' ? 'error' : '');
+      setTimeout(function() { t.classList.remove('show'); }, 3000);
     }
 
     function logout() {
