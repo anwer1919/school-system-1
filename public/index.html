@@ -586,17 +586,19 @@
       container.innerHTML = html;
     }
 
-    function printSchedule() {
-      const section = document.getElementById('schedule-section').value;
-      const view = document.getElementById('schedule-view').value;
-      const sectionName = section === 'all' ? 'جميع الفصول' : section;
-      
-      let url = `/api/reports/schedules?section=${section}&view=${view}`;
-      
-      if (view === 'daily') {
-        const day = document.getElementById('schedule-day').value;
-        url += `&day=${encodeURIComponent(day)}`;
-      }
+   function printSchedule() {
+  const section = document.getElementById('schedule-section').value;
+  const view = document.getElementById('schedule-view').value;
+  
+  let url = `/api/reports/schedule-print?section=${encodeURIComponent(section)}&view=${view}`;
+  
+  if (view === 'daily') {
+    const day = document.getElementById('schedule-day').value;
+    url += `&day=${encodeURIComponent(day)}`;
+  }
+  
+  window.open(url, '_blank');
+}
       
       window.open(url, '_blank');
     }
