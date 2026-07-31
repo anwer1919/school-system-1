@@ -357,6 +357,18 @@
               <span class="text-3xl">💰</span>
               <div><h4 class="font-bold">التقرير المالي</h4><p class="text-xs opacity-90">عرض وطباعة</p></div>
             </a>
+            <a href="/api/reports/financial" target="_blank" class="bg-gradient-to-br from-slate-600 to-slate-800 text-white p-5 rounded-xl hover:shadow-lg transition flex items-center gap-3">
+              <span class="text-3xl">💵</span>
+              <div><h4 class="font-bold">التقرير الشامل</h4><p class="text-xs opacity-90">عرض وطباعة</p></div>
+            </a>
+            <a href="/api/reports/transport" target="_blank" class="bg-gradient-to-br from-teal-500 to-cyan-600 text-white p-5 rounded-xl hover:shadow-lg transition flex items-center gap-3">
+              <span class="text-3xl">🚌</span>
+              <div><h4 class="font-bold">تقرير النقل</h4><p class="text-xs opacity-90">عرض وطباعة</p></div>
+            </a>
+            <a href="/api/reports/attendance" target="_blank" class="bg-gradient-to-br from-rose-500 to-pink-600 text-white p-5 rounded-xl hover:shadow-lg transition flex items-center gap-3">
+              <span class="text-3xl">📅</span>
+              <div><h4 class="font-bold">تقرير الحضور</h4><p class="text-xs opacity-90">عرض وطباعة</p></div>
+            </a>
           </div>
         </div>
       `;
@@ -491,7 +503,7 @@
       container.innerHTML = '<div class="text-center py-12 text-slate-400">جاري التحميل...</div>';
       
       try {
-        let url = `/api/schedules/weekly?section=${section}&view=${view}`;
+        let url = `/api/schedules/weekly?section=${encodeURIComponent(section)}&view=${view}`;
         
         if (view === 'daily') {
           const day = document.getElementById('schedule-day').value;
@@ -586,19 +598,17 @@
       container.innerHTML = html;
     }
 
-   function printSchedule() {
-  const section = document.getElementById('schedule-section').value;
-  const view = document.getElementById('schedule-view').value;
-  
-  let url = `/api/reports/schedule-print?section=${encodeURIComponent(section)}&view=${view}`;
-  
-  if (view === 'daily') {
-    const day = document.getElementById('schedule-day').value;
-    url += `&day=${encodeURIComponent(day)}`;
-  }
-  
-  window.open(url, '_blank');
-}
+    // ✅ دالة الطباعة المعدلة - تستخدم API الجديد مع الفلترة
+    function printSchedule() {
+      const section = document.getElementById('schedule-section').value;
+      const view = document.getElementById('schedule-view').value;
+      
+      let url = `/api/reports/schedule-print?section=${encodeURIComponent(section)}&view=${view}`;
+      
+      if (view === 'daily') {
+        const day = document.getElementById('schedule-day').value;
+        url += `&day=${encodeURIComponent(day)}`;
+      }
       
       window.open(url, '_blank');
     }
