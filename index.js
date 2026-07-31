@@ -159,6 +159,235 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
+// ======== APIs للطلاب المتقدم ========
+app.get('/api/students/:id', async (req, res) => {
+  try {
+    const { data: student, error } = await supabase.from('students').select('*').eq('id', req.params.id).limit(1);
+    if (error || !student || student.length === 0) {
+      return res.status(404).json({ success: false, message: 'الطالب غير موجود' });
+    }
+    
+    const studentData = student[0];
+    
+    let parentData = null;
+    if (studentData.parent_id) {
+      const { data: parent } = await supabase.from('parents').select('*').eq('id', studentData.parent_id).limit(1);
+      if (parent && parent.length > 0) parentData = parent[0];
+    }
+    
+    const { data: fees } = await supabase.from('fees').select('*').eq('student_name', studentData.name);
+    
+    res.json({ success: true, data: { ...studentData, parent: parentData, fees: fees || [] } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.get('/api/students/search', async (req, res) => {
+  try {
+    const { query, field } = req.query;
+    
+    let data;
+    if (field === 'name') {
+      const { data: result } = await supabase.from('students').select('*').ilike('name', `%${query}%`).order('name');
+      data = result;
+    } else if (field === 'number') {
+      const { data: result } = await supabase.from('students').select('*').eq('student_number', query).order('name');
+      data = result;
+    } else if (field === 'grade') {
+      const { data: result } = await supabase.from('students').select('*').eq('grade', query).order('name');
+      data = result;
+    } else {
+      const { data: result } = await supabase.from('students').select('*').order('name');
+      data = result;
+    }
+    
+    res.json({ success: true, count: data ? data.length : 0, data: data || [] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ======== APIs للبطاقات ========
+app.post('/api/cards', async (req, res) => {
+  try {
+    const { type, person_id, card_number, expiry_date } = req.body;
+    
+    const { data, error } = await supabase.from('cards').insert([{
+      type,
+      person_id,
+      card_number: card_number || `${type}-${Date.now()}`,
+      expiry_date: expiry_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    }]).select();
+    
+    if (error) throw error;
+    res.json({ success: true, data: data[0], message: '✅ تم إنشاء البطاقة بنجاح' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.get('/api/cards/person/:type/:id', async (req, res) => {
+  try {
+    const { type, id } = req.params;
+    let table = '';
+    
+    if (type === 'student') table = 'students';
+    else if (type === 'teacher') table = 'teachers';
+    else if (type === 'employee') table = 'employees';
+    else return res.status(400).json({ success: false, message: 'نوع غير صحيح' });
+    
+    const { data, error } = await supabase.from(table).select('*').eq('id', id).limit(1);
+    if (error || !data || data.length === 0) {
+      return res.status(404).json({ success: false, message: 'الشخص غير موجود' });
+    }
+    
+    res.json({ success: true, data: data[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.get('/api/cards/print/:type/:id', async (req, res) => {
+  try {
+    const { type, id } = req.params;
+    let table = '';
+    let typeName = '';
+    
+    if (type === 'student') { table = 'students'; typeName = 'طالب'; }
+    else if (type === 'teacher') { table = 'teachers'; typeName = 'معلم'; }
+    else if (type === 'employee') { table = 'employees'; typeName = 'موظف'; }
+    else return res.status(400).send('نوع غير صحيح');
+    
+    const { data } = await supabase.from(table).select('*').eq('id', id).limit(1);
+    if (!data || data.length === 0) return res.status(404).send('الشخص غير موجود');
+    
+    const person = data[0];
+    const dt = getDateTimeInfo();
+    const cardNumber = `${type.toUpperCase()}-${id}-${Date.now().toString().slice(-6)}`;
+    
+    const html = `<!DOCTYPE html>
+<html dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>بطاقة ${typeName} - ${person.name}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Cairo', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+  .card { width: 400px; height: 250px; margin: 20px auto; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%); border-radius: 20px; box-shadow: 0 25px 70px rgba(0,0,0,0.4); position: relative; overflow: hidden; color: white; }
+  .card::before { content: ''; position: absolute; top: -50%; right: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%); animation: shimmer 3s infinite; }
+  @keyframes shimmer { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(180deg); } }
+  .card-header { background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(255,255,255,0.3); position: relative; z-index: 1; }
+  .school-logo { font-size: 36px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+  .school-name { font-size: 15px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+  .card-type { background: rgba(255,255,255,0.25); padding: 6px 18px; border-radius: 25px; font-size: 13px; font-weight: 700; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+  .card-body { padding: 25px; display: flex; gap: 25px; position: relative; z-index: 1; }
+  .photo { width: 110px; height: 110px; border-radius: 18px; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 54px; border: 4px solid rgba(255,255,255,0.4); overflow: hidden; flex-shrink: 0; box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+  .photo img { width: 100%; height: 100%; object-fit: cover; }
+  .info { flex: 1; }
+  .info-row { margin-bottom: 10px; }
+  .info-label { font-size: 11px; opacity: 0.9; margin-bottom: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .info-value { font-size: 15px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+  .card-footer { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); padding: 12px 25px; display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; }
+  .card-number { font-family: 'Courier New', monospace; letter-spacing: 2px; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 8px; }
+  .print-btn { display: block; margin: 30px auto; padding: 16px 50px; background: white; color: #1e40af; border: none; border-radius: 35px; font-size: 17px; font-weight: 800; cursor: pointer; box-shadow: 0 15px 40px rgba(0,0,0,0.3); transition: all 0.3s; font-family: 'Cairo', sans-serif; }
+  .print-btn:hover { transform: translateY(-3px); box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+  @media print { body { background: white; padding: 0; } .card { box-shadow: none; page-break-inside: avoid; } .print-btn { display: none; } }
+  @media (max-width: 480px) { .card { width: 340px; height: 220px; } .photo { width: 90px; height: 90px; font-size: 42px; } .info-value { font-size: 13px; } }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="school-logo"></div>
+      <div class="school-name">مدرسة النور النموذجية</div>
+    </div>
+    <div class="card-type">${typeName}</div>
+  </div>
+  <div class="card-body">
+    <div class="photo">
+      ${person.photo ? `<img src="${person.photo}" alt="صورة شخصية">` : '👤'}
+    </div>
+    <div class="info">
+      <div class="info-row">
+        <div class="info-label">الاسم الكامل</div>
+        <div class="info-value">${person.name}</div>
+      </div>
+      ${type === 'student' ? `
+        <div class="info-row">
+          <div class="info-label">الصف والشعبة</div>
+          <div class="info-value">${person.grade || '-'} - ${person.section || '-'}</div>
+        </div>
+      ` : ''}
+      ${type === 'teacher' ? `
+        <div class="info-row">
+          <div class="info-label">المادة الدراسية</div>
+          <div class="info-value">${person.subject || '-'}</div>
+        </div>
+      ` : ''}
+      ${type === 'employee' ? `
+        <div class="info-row">
+          <div class="info-label">الوظيفة</div>
+          <div class="info-value">${person.role || '-'}</div>
+        </div>
+      ` : ''}
+      <div class="info-row">
+        <div class="info-label">رقم الهاتف</div>
+        <div class="info-value">${person.phone || '-'}</div>
+      </div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="card-number">${cardNumber}</div>
+    <div>${dt.dateStr}</div>
+  </div>
+</div>
+<button class="print-btn" onclick="window.print()">🖨️ طباعة البطاقة</button>
+</body>
+</html>`;
+    
+    res.send(html);
+  } catch (err) {
+    res.status(500).send('خطأ في الخادم: ' + err.message);
+  }
+});
+
+// ======== جلب المعلمين لإنشاء قائمة منسدلة ========
+app.get('/api/teachers-list', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('teachers').select('id, name, subject').order('name');
+    if (error) throw error;
+    res.json({ success: true, data: data || [] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ======== جلب المواد لإنشاء قائمة منسدلة ========
+app.get('/api/subjects-list', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('subjects').select('id, name').order('name');
+    if (error) throw error;
+    res.json({ success: true, data: data || [] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ======== جلب الفصول من جدول الحصص ========
+app.get('/api/sections-list', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('schedules').select('section');
+    if (error) throw error;
+    const sections = [...new Set((data || []).map(d => d.section))].filter(s => s).sort();
+    res.json({ success: true, data: sections });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // ======== كل الجداول ========
 const tables = ['students', 'teachers', 'employees', 'parents', 'subjects', 'exams', 'grades', 'schedules', 'attendance', 'fees', 'revenue', 'expenses', 'transport', 'clinic', 'library', 'inventory', 'calendar_events', 'audit_log', 'school_info'];
 
@@ -282,7 +511,7 @@ app.get('/api/schedules/weekly', async (req, res) => {
   }
 });
 
-// ======== طباعة جدول الحصص (مع فلترة) - الجديد ========
+// ======== طباعة جدول الحصص (مع فلترة) ========
 app.get('/api/reports/schedule-print', async (req, res) => {
   try {
     const { section, view, day } = req.query;
@@ -320,7 +549,7 @@ app.get('/api/reports/schedule-print', async (req, res) => {
       
       tableHtml += '</tbody></table>';
     } else {
-      title = '📆 الجدول الأسبوعي - ' + sectionName;
+      title = ' الجدول الأسبوعي - ' + sectionName;
       const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
       const periods = [1, 2, 3, 4, 5];
       
@@ -535,7 +764,7 @@ app.get('/certificate/:id', async (req, res) => {
     const g = p >= 90 ? 'ممتاز' : p >= 80 ? 'جيد جداً' : p >= 70 ? 'جيد' : p >= 60 ? 'مقبول' : 'ضعيف';
     const gColor = p >= 90 ? '#10b981' : p >= 80 ? '#3b82f6' : p >= 70 ? '#f59e0b' : '#ef4444';
 
-    const html = '<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>شهادة - ' + student.name + '</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet"><style>body{font-family:Cairo,sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);padding:40px 20px}.report-header{background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;padding:25px;border-radius:10px;margin-bottom:20px;text-align:center;max-width:850px;margin:0 auto 20px auto;box-shadow:0 4px 6px rgba(0,0,0,0.1)}.report-header .school-name{font-size:26px;font-weight:bold;margin-bottom:10px}.report-header .info{display:flex;justify-content:space-around;margin-top:15px;font-size:13px}.report-header .info div{background:rgba(255,255,255,0.2);padding:8px 15px;border-radius:8px}.cert{max-width:850px;margin:auto;background:#fffef5;padding:50px;border:20px double #d4af37;border-radius:15px}.header{text-align:center;border-bottom:3px double #d4af37;padding-bottom:20px;margin-bottom:30px}.header h1{color:#1e40af;font-size:38px}.title{text-align:center;font-size:42px;color:#d4af37;margin:30px 0;font-weight:700}.student-name{display:inline-block;font-size:34px;color:#1e40af;font-weight:700;border-bottom:3px solid #d4af37;padding:5px 40px 10px}table{width:100%;border-collapse:collapse;margin:30px 0}th{background:#1e40af;color:white;padding:14px}td{padding:12px;border:1px solid #ddd;text-align:center}.total-row{background:#fef3c7;font-weight:700;border-top:3px solid #d4af37}.grade-badge{padding:8px 25px;background:' + gColor + ';color:white;font-size:22px;font-weight:700;border-radius:30px}.print-btn{display:block;margin:25px auto;padding:15px 50px;background:#1e40af;color:white;border:none;border-radius:30px;font-size:18px;cursor:pointer}@media print{body{background:white;padding:0}.cert{box-shadow:none}.print-btn{display:none}.report-header{box-shadow:none}}</style></head><body><div class="report-header"><div class="school-name">🏫 ' + school.name + '</div><div class="info"><div>📅 التاريخ: ' + dt.dateStr + '</div><div>🕐 الوقت: ' + dt.timeStr + '</div></div></div><div class="cert"><div class="header"><div style="font-size:70px">' + (school.logo || '🏫') + '</div><h1>' + school.name + '</h1><div style="color:#d4af37;font-size:18px">العام الدراسي: ' + school.academic_year + '</div></div><div class="title">✨ شهادة تقدير ✨</div><div style="text-align:center"><p style="font-size:20px">تشهد إدارة المدرسة بأن الطالب/ة</p><div class="student-name">' + student.name + '</div><p style="font-size:18px;margin-top:15px">بالصف <strong>' + student.grade + '</strong> - شعبة <strong>' + student.section + '</strong></p></div>' + (gradesData && gradesData.length > 0 ? '<table><thead><tr><th>م</th><th>المادة</th><th>درجة الطالب/ة</th><th>المجموع الكلي</th><th>النسبة</th></tr></thead><tbody>' + gradesData.map(function(g, i) { return '<tr><td>' + (i + 1) + '</td><td>' + g.subject + '</td><td>' + g.score + '</td><td>' + g.max_score + '</td><td>' + ((g.score / g.max_score) * 100).toFixed(1) + '%</td></tr>'; }).join('') + '<tr class="total-row"><td colspan="2" style="text-align:right;padding-right:20px">المجموع الكلي</td><td>' + ts + '</td><td>' + tm + '</td><td>' + p + '%</td></tr></tbody></table><div style="background:#fef3c7;padding:20px;border-radius:15px;margin:20px 0;border:2px solid #d4af37;display:flex;justify-content:space-around"><div style="text-align:center"><div style="font-size:16px;color:#92400e">النسبة</div><div style="font-size:32px;color:#1e40af;font-weight:700">' + p + '%</div></div><div style="text-align:center"><div style="font-size:16px;color:#92400e">التقدير</div><div class="grade-badge">' + g + '</div></div></div>' : '<p style="text-align:center;color:#999;padding:20px">لا توجد درجات مسجلة</p>') + '<div style="display:flex;justify-content:space-between;margin-top:60px;padding-top:20px;border-top:2px solid #d4af37"><div style="text-align:center;flex:1"><div style="color:#666;margin-bottom:40px">التاريخ</div><div style="border-top:2px solid #333;width:180px;margin:0 auto"></div></div><div style="text-align:center;flex:1"><div style="color:#666;margin-bottom:40px">توقيع المدير</div><div style="border-top:2px solid #333;width:180px;margin:0 auto"></div></div></div></div><button class="print-btn" onclick="window.print()">🖨️ طباعة</button></body></html>';
+    const html = '<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>شهادة - ' + student.name + '</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet"><style>body{font-family:Cairo,sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);padding:40px 20px}.report-header{background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;padding:25px;border-radius:10px;margin-bottom:20px;text-align:center;max-width:850px;margin:0 auto 20px auto;box-shadow:0 4px 6px rgba(0,0,0,0.1)}.report-header .school-name{font-size:26px;font-weight:bold;margin-bottom:10px}.report-header .info{display:flex;justify-content:space-around;margin-top:15px;font-size:13px}.report-header .info div{background:rgba(255,255,255,0.2);padding:8px 15px;border-radius:8px}.cert{max-width:850px;margin:auto;background:#fffef5;padding:50px;border:20px double #d4af37;border-radius:15px}.header{text-align:center;border-bottom:3px double #d4af37;padding-bottom:20px;margin-bottom:30px}.header h1{color:#1e40af;font-size:38px}.title{text-align:center;font-size:42px;color:#d4af37;margin:30px 0;font-weight:700}.student-name{display:inline-block;font-size:34px;color:#1e40af;font-weight:700;border-bottom:3px solid #d4af37;padding:5px 40px 10px}table{width:100%;border-collapse:collapse;margin:30px 0}th{background:#1e40af;color:white;padding:14px}td{padding:12px;border:1px solid #ddd;text-align:center}.total-row{background:#fef3c7;font-weight:700;border-top:3px solid #d4af37}.grade-badge{padding:8px 25px;background:' + gColor + ';color:white;font-size:22px;font-weight:700;border-radius:30px}.print-btn{display:block;margin:25px auto;padding:15px 50px;background:#1e40af;color:white;border:none;border-radius:30px;font-size:18px;cursor:pointer}@media print{body{background:white;padding:0}.cert{box-shadow:none}.print-btn{display:none}.report-header{box-shadow:none}}</style></head><body><div class="report-header"><div class="school-name">🏫 ' + school.name + '</div><div class="info"><div>📅 التاريخ: ' + dt.dateStr + '</div><div>🕐 الوقت: ' + dt.timeStr + '</div></div></div><div class="cert"><div class="header"><div style="font-size:70px">' + (school.logo || '') + '</div><h1>' + school.name + '</h1><div style="color:#d4af37;font-size:18px">العام الدراسي: ' + school.academic_year + '</div></div><div class="title">✨ شهادة تقدير ✨</div><div style="text-align:center"><p style="font-size:20px">تشهد إدارة المدرسة بأن الطالب/ة</p><div class="student-name">' + student.name + '</div><p style="font-size:18px;margin-top:15px">بالصف <strong>' + student.grade + '</strong> - شعبة <strong>' + student.section + '</strong></p></div>' + (gradesData && gradesData.length > 0 ? '<table><thead><tr><th>م</th><th>المادة</th><th>درجة الطالب/ة</th><th>المجموع الكلي</th><th>النسبة</th></tr></thead><tbody>' + gradesData.map(function(g, i) { return '<tr><td>' + (i + 1) + '</td><td>' + g.subject + '</td><td>' + g.score + '</td><td>' + g.max_score + '</td><td>' + ((g.score / g.max_score) * 100).toFixed(1) + '%</td></tr>'; }).join('') + '<tr class="total-row"><td colspan="2" style="text-align:right;padding-right:20px">المجموع الكلي</td><td>' + ts + '</td><td>' + tm + '</td><td>' + p + '%</td></tr></tbody></table><div style="background:#fef3c7;padding:20px;border-radius:15px;margin:20px 0;border:2px solid #d4af37;display:flex;justify-content:space-around"><div style="text-align:center"><div style="font-size:16px;color:#92400e">النسبة</div><div style="font-size:32px;color:#1e40af;font-weight:700">' + p + '%</div></div><div style="text-align:center"><div style="font-size:16px;color:#92400e">التقدير</div><div class="grade-badge">' + g + '</div></div></div>' : '<p style="text-align:center;color:#999;padding:20px">لا توجد درجات مسجلة</p>') + '<div style="display:flex;justify-content:space-between;margin-top:60px;padding-top:20px;border-top:2px solid #d4af37"><div style="text-align:center;flex:1"><div style="color:#666;margin-bottom:40px">التاريخ</div><div style="border-top:2px solid #333;width:180px;margin:0 auto"></div></div><div style="text-align:center;flex:1"><div style="color:#666;margin-bottom:40px">توقيع المدير</div><div style="border-top:2px solid #333;width:180px;margin:0 auto"></div></div></div></div><button class="print-btn" onclick="window.print()">🖨️ طباعة</button></body></html>';
     
     res.send(html);
   } catch (err) {
@@ -553,7 +782,7 @@ function makeReport(title, headers, rows, extra) {
 app.get('/api/reports/students', async (req, res) => {
   const { data } = await supabase.from('students').select('*');
   const r = (data || []).map(function(s) { return '<tr><td>' + s.id + '</td><td>' + s.name + '</td><td>' + (s.grade || '-') + '</td><td>' + (s.section || '-') + '</td><td>' + (s.status || '-') + '</td></tr>'; }).join('');
-  res.send(makeReport('📄 تقرير الطلاب', ['الرقم', 'الاسم', 'الصف', 'الشعبة', 'الحالة'], r));
+  res.send(makeReport(' تقرير الطلاب', ['الرقم', 'الاسم', 'الصف', 'الشعبة', 'الحالة'], r));
 });
 
 app.get('/api/reports/teachers', async (req, res) => {
@@ -581,7 +810,7 @@ app.get('/api/reports/grades', async (req, res) => {
     var gr = p >= 90 ? 'ممتاز' : p >= 80 ? 'جيد جداً' : p >= 70 ? 'جيد' : p >= 60 ? 'مقبول' : 'ضعيف';
     return '<tr><td>' + g.student_name + '</td><td>' + g.subject + '</td><td>' + g.score + '/' + g.max_score + '</td><td>' + p + '%</td><td>' + gr + '</td></tr>';
   }).join('');
-  res.send(makeReport('🎯 كشوف الدرجات', ['الطالب', 'المادة', 'الدرجة', 'النسبة', 'التقدير'], r));
+  res.send(makeReport(' كشوف الدرجات', ['الطالب', 'المادة', 'الدرجة', 'النسبة', 'التقدير'], r));
 });
 
 app.get('/api/reports/fees', async (req, res) => {
@@ -614,43 +843,11 @@ app.get('/api/reports/transport', async (req, res) => {
 app.get('/api/reports/schedules', async (req, res) => {
   const { data } = await supabase.from('schedules').select('*');
   const r = (data || []).map(function(s) { return '<tr><td>' + s.day + '</td><td>' + s.period + '</td><td>' + s.subject + '</td><td>' + (s.teacher || '-') + '</td><td>' + (s.section || '-') + '</td><td>' + (s.room || '-') + '</td></tr>'; }).join('');
-  res.send(makeReport('🕐 جدول الحصص', ['اليوم', 'الحصة', 'المادة', 'المعلم', 'الفصل', 'القاعة'], r));
-});
-// ======== جلب المعلمين لإنشاء قائمة منسدلة ========
-app.get('/api/teachers-list', async (req, res) => {
-  try {
-    const { data, error } = await supabase.from('teachers').select('id, name, subject').order('name');
-    if (error) throw error;
-    res.json({ success: true, data: data || [] });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  res.send(makeReport(' جدول الحصص', ['اليوم', 'الحصة', 'المادة', 'المعلم', 'الفصل', 'القاعة'], r));
 });
 
-// ======== جلب المواد لإنشاء قائمة منسدلة ========
-app.get('/api/subjects-list', async (req, res) => {
-  try {
-    const { data, error } = await supabase.from('subjects').select('id, name').order('name');
-    if (error) throw error;
-    res.json({ success: true, data: data || [] });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// ======== جلب الفصول من جدول الحصص ========
-app.get('/api/sections-list', async (req, res) => {
-  try {
-    const { data, error } = await supabase.from('schedules').select('section');
-    if (error) throw error;
-    const sections = [...new Set((data || []).map(d => d.section))].filter(s => s).sort();
-    res.json({ success: true, data: sections });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
 // ======== تشغيل الخادم ========
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', function() {
-  console.log('🚀 النظام يعمل على المنفذ ' + PORT);
+  console.log(' النظام يعمل على المنفذ ' + PORT);
 });
