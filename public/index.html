@@ -95,7 +95,7 @@
   </div>
     <script>
     const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
-    if (!currentUser || !currentUser.role) window.location.href = '/login';
+    if (!currentUser || !currentUser.role) { window.location.href = '/login'; throw new Error('Not authenticated'); }
     const userRole = currentUser.role;
     document.querySelector('#current-date span').textContent = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
